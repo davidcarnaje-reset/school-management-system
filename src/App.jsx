@@ -6,6 +6,7 @@ import PublicRoute from './components/routing/PublicRoute';
 import SetupPassword from './pages/auth/SetupPassword'; // O kung saan mo man sinave
 import ForgotPassword from './pages/auth/ForgotPassword'; // <-- Siguraduhin na tama ang path
 import ResetPassword from './pages/auth/ResetPassword';
+import StudentManagement from './pages/registrar/StudentManagement'; // (Palitan path depende sa kung saan mo sinave)
 
 // Layouts
 import AdminLayout from './layouts/AdminLayout';
@@ -97,6 +98,8 @@ function App() {
               <AdminLayout />
             </ProtectedRoute>
           }>
+
+            <Route path="/registrar/students" element={<ProtectedRoute allowedRoles={['registrar']}><StudentManagement /></ProtectedRoute>}/>
             <Route path="dashboard" element={<div className="p-10 text-2xl font-bold text-blue-600">Registrar Command Center</div>} />
             <Route path="students" element={<div className="p-10 text-2xl font-bold">Student Records (Registrar)</div>} />
           </Route>
