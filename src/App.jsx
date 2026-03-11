@@ -29,13 +29,6 @@ const AdminDashboard = () => (
   </div>
 );
 
-const CashierDashboard = () => (
-  <div className="p-10">
-    <h1 className="text-3xl font-bold text-blue-600 tracking-tight">Cashier Dashboard</h1>
-    <p className="mt-2 text-slate-600 font-medium">Welcome to the Cashier Portal.</p>
-  </div>
-);
-
 const Unauthorized = () => (
   <div className="h-screen flex flex-col items-center justify-center p-10 text-center bg-slate-50">
     <h1 className="text-6xl font-black text-slate-200 mb-4">403</h1>
@@ -95,8 +88,8 @@ function App() {
               <AdminLayout />
             </ProtectedRoute>
           }>
-            <Route path="dashboard" element={<div className="p-10 text-2xl font-bold">Cashier Dashboard (Harvey)</div>} />
-            <Route path="payments" element={<div className="p-10 text-2xl font-bold">Payments Module (Harvey)</div>} />
+            <Route path="dashboard" element={<CashierDashboard />} />
+            <Route path="payments" element={<PaymentDashboard />} />
           </Route>
 
           {/* 5. LMS / TEACHER ROUTES (Kay Joshua) */}
