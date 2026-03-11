@@ -8,6 +8,7 @@ import ForgotPassword from './pages/auth/ForgotPassword'; // <-- Siguraduhin na 
 import ResetPassword from './pages/auth/ResetPassword';
 import StudentManagement from './pages/registrar/StudentManagement'; // (Palitan path depende sa kung saan mo sinave)
 import StudentDashboard from './pages/student/StudentDashboard';
+import CashierDashboard from './pages/cashier/CashierDashboard'; // (Palitan path depende sa kung saan mo sinave)
 
 
 // Layouts
@@ -83,10 +84,10 @@ function App() {
           {/* 4. CASHIER ROUTES (Kay Harvey) */}
           <Route path="/cashier" element={
             <ProtectedRoute allowedRoles={['cashier']}>
-              <AdminLayout /> 
+              <AdminLayout />
             </ProtectedRoute>
           }>
-            <Route path="dashboard" element={<div className="p-10 text-2xl font-bold">Cashier Dashboard (Harvey)</div>} />
+            <Route path="dashboard" element={<CashierDashboard />} />
             <Route path="payments" element={<div className="p-10 text-2xl font-bold">Payments Module (Harvey)</div>} />
           </Route>
 
