@@ -1,182 +1,170 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-const StudentDashboard = () => {
+const StudentPortal = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [isSidebarOpen, setSidebarOpen] = useState(false);
-
-  // MOCK DATA: Sa Phase 2, ito ay manggagaling sa `api/student_info.php`
-  const [studentData, setStudentData] = useState({
-    classification: "Transferee", // Values: "New Student", "Transferee", "Continuing"
-    yearLevel: "2nd Year",
-    paymentStatus: "Unpaid", // Kapag "Unpaid", naka-lock ang LMS
-    balance: "12,450.00",
-    course: "BS Information Technology"
+  const [loading, setLoading] = useState(true);
+  
+  // Dito natin ilalagay ang data na galing sa iyong PHP script
+  const [studentInfo, setStudentInfo] = useState({
+    student_id: '',
+    full_name: '',
+    enrollment_type: '', // New, Transferee, o Continuing
+    grade_level: '',     // Grade 7, 8, etc.
+    payment_status: '',  // Paid o Unpaid (mula sa student_billing table)
+    balance: 0,
+    school_year: ''
   });
 
-  const schoolName = "Colegio de San Pascual Baylon";
-  const schoolAcronym = "CSPB";
+  // 1. FETCH DATA FROM BACKEND
+  useEffect(() => {
+    const fetchPortalData = async () => {
+      try {
+        // Gagawa tayo ng bagong endpoint na: get_portal_info.php
+        const response = await axios.get(`http://localhost/sms-api/get_portal_info.php?email=${user.email}`);
+        if (response.data.success) {
+          setStudentInfo(response.data.data);
+        }
+      } catch (err) {
+        console.error("Portal Error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const handleLogout = () => {
-    if (window.confirm("Sigurado ka bang nais mong mag-logout sa CSPB Portal?")) {
-      logout();
-      navigate('/');
-    }
-  };
+    if (user?.email) fetchPortalData();
+  }, [user]);
 
-  // LMS Access Logic (Gatekeeper)
+  // 2. GATEKEEPER LOGIC (LMS Lock)
+  // Base sa iyong code, ang status ay 'Unpaid' initially sa `student_billing` table
+  const isLMSLocked = studentInfo.payment_status === 'Unpaid';
+
   const handleLMSAccess = () => {
-    if (studentData.paymentStatus !== "Paid") {
-      alert("🛑 ACCESS DENIED: Naka-lock ang iyong LMS Classroom. Mangyaring magbayad sa Cashier upang ma-activate ang iyong account.");
+    if (isLMSLocked) {
+      alert(`🛑 ACCESS RESTRICTED: Naka-lock ang iyong LMS. Mangyaring bayaran ang iyong balance na ₱${studentInfo.balance} sa Cashier.`);
     } else {
       navigate('/lms');
     }
   };
 
-  const menuItems = [
-    { name: 'Dashboard', icon: '🏠', path: '/dashboard', locked: false },
-    { name: 'LMS Classroom', icon: '📚', action: handleLMSAccess, locked: studentData.paymentStatus !== "Paid" },
-    { name: 'Accounting', icon: '💳', path: '/accounting', locked: false },
-    { name: 'Enrollment', icon: '📝', path: '/enrollment', locked: false },
-    { name: 'Academic Grades', icon: '📊', path: '/grades', locked: false },
-  ];
+  if (loading) return <div className="h-screen flex items-center justify-center font-black animate-pulse">LOADING CSPB PORTAL...</div>;
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col md:flex-row font-sans">
       
-      {/* --- SIDEBAR --- */}
-      <aside className={`fixed inset-y-0 left-0 z-40 w-72 bg-[#001f3f] text-white transform transition-transform duration-300 md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="h-full flex flex-col">
-          <div className="p-8 flex flex-col items-center border-b border-white/10">
-            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-[#001f3f] font-black text-xl border-4 border-yellow-500 mb-4 shadow-xl">
-              {schoolAcronym}
-            </div>
-            <h2 className="text-center font-black text-[10px] uppercase tracking-widest leading-tight">{schoolName}</h2>
+      {/* SIDEBAR */}
+      <aside className="w-full md:w-72 bg-[#001f3f] text-white p-8 flex flex-col border-r-4 border-yellow-500">
+        <div className="mb-10 text-center">
+          <div className="w-20 h-20 bg-white rounded-3xl mx-auto mb-4 flex items-center justify-center text-[#001f3f] font-black text-2xl border-4 border-yellow-500 shadow-2xl">
+            CSPB
           </div>
-
-          <nav className="flex-1 px-4 py-6 space-y-1">
-            {menuItems.map((item) => (
-              <button
-                key={item.name}
-                onClick={item.action ? item.action : () => { navigate(item.path); setSidebarOpen(false); }}
-                className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl font-bold text-sm transition-all group
-                  ${item.locked ? 'opacity-40 cursor-not-allowed grayscale' : 'hover:bg-yellow-500 hover:text-[#001f3f] text-slate-300'}
-                `}
-              >
-                <div className="flex items-center gap-4">
-                  <span className="text-xl">{item.icon}</span>
-                  {item.name}
-                </div>
-                {item.locked && <span>🔒</span>}
-              </button>
-            ))}
-          </nav>
-
-          <div className="p-6 bg-black/20 border-t border-white/5">
-            <button onClick={handleLogout} className="w-full py-3 rounded-xl bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white transition-all text-[10px] font-black uppercase tracking-widest border border-red-600/30">
-              Logout System
-            </button>
-          </div>
+          <h2 className="text-xs font-black uppercase tracking-[0.2em]">Student Portal</h2>
         </div>
+
+        <nav className="flex-1 space-y-2">
+          <MenuBtn label="Dashboard" icon="🏠" active />
+          {/* LMS BUTTON WITH LOCK ICON */}
+          <button 
+            onClick={handleLMSAccess}
+            className={`w-full flex items-center justify-between p-4 rounded-2xl font-bold text-sm transition-all
+              ${isLMSLocked ? 'bg-slate-800/50 text-slate-500 cursor-not-allowed' : 'hover:bg-yellow-500 hover:text-[#001f3f] text-slate-300'}`}
+          >
+            <div className="flex items-center gap-4"><span>📚</span> LMS Classroom</div>
+            {isLMSLocked && <span>🔒</span>}
+          </button>
+          <MenuBtn label="Accounting" icon="💳" onClick={() => navigate('/accounting')} />
+        </nav>
+
+        <button onClick={logout} className="mt-10 p-4 bg-red-600/20 text-red-400 rounded-2xl font-black text-[10px] uppercase tracking-widest border border-red-600/30 hover:bg-red-600 hover:text-white transition-all">
+          Logout Session
+        </button>
       </aside>
 
-      {/* --- MAIN CONTENT --- */}
-      <main className="flex-1 h-screen overflow-y-auto p-6 md:p-10 pb-32">
-        <div className="max-w-6xl mx-auto">
+      {/* MAIN CONTENT */}
+      <main className="flex-1 p-6 md:p-12 overflow-y-auto">
+        <div className="max-w-5xl mx-auto">
           
-          {/* Header & Classification Badge */}
-          <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          {/* TOP INFO BAR */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
             <div>
-              <div className="flex items-center gap-3 mb-2">
-                <span className="bg-yellow-500 text-[#001f3f] text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
-                  {studentData.classification}
+              <div className="flex items-center gap-3 mb-3">
+                {/* Dito papasok ang "New Student" o "Transferee" badge mula sa code mo */}
+                <span className="bg-yellow-500 text-[#001f3f] px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm">
+                  {studentInfo.enrollment_type}
                 </span>
-                <span className="bg-slate-200 text-slate-700 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
-                  {studentData.yearLevel}
+                <span className="bg-slate-200 text-slate-600 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+                  {studentInfo.grade_level}
                 </span>
               </div>
-              <h1 className="text-3xl md:text-5xl font-black text-slate-900 leading-tight">
-                Mabuhay, <span className="text-[#003366]">{user?.full_name?.split(' ')[0] || 'Student'}</span>!
+              <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter">
+                Mabuhay, <span className="text-[#003366]">{studentInfo.full_name.split(' ')[0]}</span>!
               </h1>
-              <p className="text-slate-500 font-bold mt-1 uppercase tracking-tighter">{studentData.course}</p>
+              <p className="text-slate-400 font-bold mt-2 uppercase text-xs tracking-widest">Official Student ID: {studentInfo.student_id}</p>
             </div>
 
-            {/* Payment Warning Indicator */}
-            {studentData.paymentStatus !== "Paid" && (
-              <div className="bg-red-50 border-2 border-red-200 p-4 rounded-2xl flex items-center gap-4 animate-pulse">
-                <div className="text-2xl">⚠️</div>
-                <div>
-                  <p className="text-[10px] font-black text-red-600 uppercase">System Status</p>
-                  <p className="text-sm font-bold text-red-800 tracking-tight text-nowrap">LMS Access is Restricted</p>
-                </div>
+            {/* PAYMENT STATUS BADGE */}
+            <div className={`p-4 rounded-3xl border-2 flex items-center gap-4 ${isLMSLocked ? 'bg-red-50 border-red-100' : 'bg-green-50 border-green-100'}`}>
+              <div className={`w-3 h-3 rounded-full animate-pulse ${isLMSLocked ? 'bg-red-500' : 'bg-green-500'}`} />
+              <div>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Account Status</p>
+                <p className={`font-black uppercase text-sm ${isLMSLocked ? 'text-red-600' : 'text-green-600'}`}>
+                  {studentInfo.payment_status}
+                </p>
               </div>
-            )}
-          </div>
-
-          {/* Stat Cards Section */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-             <StatCard title="Account Type" value={studentData.classification} icon="🆔" color="border-l-yellow-500" />
-             <StatCard title="Payment" value={studentData.paymentStatus} icon="💳" color={studentData.paymentStatus === "Paid" ? "border-l-green-500" : "border-l-red-500"} />
-             <StatCard title="Current GWA" value="1.75" icon="📈" color="border-l-blue-500" />
-             <StatCard title="Year Level" value={studentData.yearLevel} icon="🏫" color="border-l-slate-400" />
-          </div>
-
-          {/* LMS Lock Alert Box */}
-          {studentData.paymentStatus !== "Paid" ? (
-            <div className="bg-white border-2 border-dashed border-slate-300 rounded-[2.5rem] p-10 text-center shadow-inner mb-10">
-              <div className="text-6xl mb-4">🔒</div>
-              <h2 className="text-2xl font-black text-slate-800 uppercase italic">LMS is Currently Locked</h2>
-              <p className="text-slate-500 max-w-md mx-auto mt-2 font-medium">
-                Hindi mo pa maaaring makita ang iyong mga subjects at lessons. Mangyaring bayaran ang balanse na 
-                <span className="text-red-600 font-bold"> ₱{studentData.balance} </span> 
-                upang ma-unlock ang iyong E-Learning account.
-              </p>
-              <button 
-                onClick={() => navigate('/accounting')}
-                className="mt-6 bg-[#003366] text-white px-10 py-4 rounded-2xl font-black text-xs uppercase hover:bg-yellow-500 hover:text-[#003366] transition-all shadow-lg"
-              >
-                Pumunta sa Accounting
-              </button>
             </div>
-          ) : (
-            /* Dashboard Content when Paid */
-            <div className="bg-green-50 border-2 border-green-200 rounded-[2.5rem] p-10 flex flex-col md:flex-row items-center gap-8 mb-10">
-              <div className="text-6xl">🔓</div>
-              <div className="text-center md:text-left">
-                <h2 className="text-2xl font-black text-green-900 uppercase">E-Learning Active</h2>
-                <p className="text-green-700 font-medium">Lahat ng iyong subjects ay handa na para sa kasalukuyang semester.</p>
-                <button onClick={() => navigate('/lms')} className="mt-4 bg-green-600 text-white px-8 py-3 rounded-xl font-bold">Open Classroom</button>
-              </div>
+          </div>
+
+          {/* WARNING BOARD FOR UNPAID STUDENTS */}
+          {isLMSLocked && (
+            <div className="bg-[#001f3f] text-white p-8 rounded-[2.5rem] mb-10 shadow-2xl relative overflow-hidden border-b-8 border-yellow-500">
+               <div className="relative z-10">
+                  <h3 className="text-yellow-500 font-black uppercase tracking-[0.2em] mb-2 text-xs">Access Restriction Notice</h3>
+                  <h2 className="text-2xl font-black mb-4">Ang iyong LMS account ay kasalukuyang Naka-lock.</h2>
+                  <p className="text-slate-300 text-sm max-w-lg leading-relaxed">
+                    Dahil sa iyong <b>{studentInfo.payment_status}</b> status, pansamantalang hindi ma-access ang mga modules. 
+                    Settle your balance of <b>₱{studentInfo.balance}</b> to resume your online classes.
+                  </p>
+                  <button onClick={() => navigate('/accounting')} className="mt-6 bg-white text-[#001f3f] px-8 py-3 rounded-xl font-black text-xs uppercase hover:bg-yellow-500 transition-all">
+                    Pay via Gcash / Bank Transfer
+                  </button>
+               </div>
+               <div className="absolute -bottom-10 -right-10 text-[15rem] font-black text-white/5 pointer-events-none italic">
+                 {studentInfo.enrollment_type.charAt(0)}
+               </div>
             </div>
           )}
 
+          {/* DASHBOARD GRID */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <StatBox label="Current Grade" value={studentInfo.grade_level} icon="🏫" />
+            <StatBox label="Outstanding Balance" value={`₱${studentInfo.balance}`} icon="💰" />
+            <StatBox label="Academic Year" value={studentInfo.school_year} icon="📅" />
+          </div>
+
         </div>
       </main>
-
-      {/* --- MOBILE BOTTOM NAV --- */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t p-3 flex justify-around items-center z-50">
-        {menuItems.slice(0, 4).map(item => (
-          <button key={item.name} onClick={item.action ? item.action : () => navigate(item.path)} className="flex flex-col items-center">
-            <span className="text-xl">{item.icon}</span>
-            <span className="text-[8px] font-black uppercase text-slate-400">{item.name.split(' ')[0]}</span>
-          </button>
-        ))}
-      </div>
-
     </div>
   );
 };
 
-const StatCard = ({ title, value, icon, color }) => (
-  <div className={`bg-white p-5 rounded-2xl border-l-4 ${color} shadow-sm`}>
-    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{title}</p>
-    <div className="flex items-center justify-between">
-      <span className="text-sm font-black text-slate-800">{value}</span>
-      <span className="text-lg opacity-30">{icon}</span>
+// HELPER COMPONENTS
+const MenuBtn = ({ label, icon, active, onClick }) => (
+  <button onClick={onClick} className={`w-full flex items-center gap-4 p-4 rounded-2xl font-bold text-sm transition-all ${active ? 'bg-yellow-500 text-[#001f3f]' : 'hover:bg-white/10 text-slate-300'}`}>
+    <span className="text-xl">{icon}</span> {label}
+  </button>
+);
+
+const StatBox = ({ label, value, icon }) => (
+  <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm flex justify-between items-center hover:shadow-xl transition-all">
+    <div>
+      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{label}</p>
+      <p className="text-xl font-black text-[#001f3f] tracking-tight">{value}</p>
     </div>
+    <span className="text-3xl opacity-20">{icon}</span>
   </div>
 );
 
-export default StudentDashboard;
+export default StudentPortal;
