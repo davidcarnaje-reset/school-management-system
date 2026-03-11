@@ -19,7 +19,7 @@ const StudentDashboard = () => {
 
   const [branding, setBranding] = useState({
     school_name: 'School Portal',
-    theme_color: '#001f3f',
+    theme_color: '#001f3f', // Default Dark Blue
     school_logo: ''
   });
 
@@ -45,7 +45,7 @@ const StudentDashboard = () => {
 
   if (loading) return (
     <div className="h-screen flex items-center justify-center bg-slate-50 font-black animate-pulse text-slate-400 uppercase tracking-widest">
-      UPDATING LAYOUT...
+      Applying Theme Colors...
     </div>
   );
 
@@ -91,7 +91,7 @@ const StudentDashboard = () => {
       {/* --- MAIN CONTENT AREA --- */}
       <main className="flex-1 overflow-y-auto relative flex flex-col">
         
-        {/* TOP NAVBAR */}
+        {/* TOP NAVBAR (KAKULAY NA NG SIDEBAR) */}
         <nav 
           style={{ backgroundColor: branding.theme_color }} 
           className="sticky top-0 z-30 px-6 py-3 flex justify-between items-center shadow-lg border-b border-white/10"
@@ -102,11 +102,13 @@ const StudentDashboard = () => {
           </div>
           
           <div className="flex items-center gap-4">
+            {/* Notification Bell White version */}
             <div className="p-2 text-white/70 hover:text-white transition-colors cursor-pointer relative hidden xs:block">
                 <Bell size={20}/>
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-yellow-500 rounded-full border-2 border-[#001f3f]"></span>
             </div>
 
+            {/* PROFILE AREA (Solid Theme Match) */}
             <div className="flex items-center gap-3 pl-4 border-l border-white/10">
               <div className="text-right hidden md:block">
                 <p className="text-[11px] font-black text-white leading-none mb-1 uppercase tracking-tight">
@@ -117,6 +119,7 @@ const StudentDashboard = () => {
                 </p>
               </div>
               
+              {/* Profile Image with Yellow Border highlight */}
               <div className="w-10 h-10 rounded-xl flex items-center justify-center border-2 border-yellow-500 shadow-md cursor-pointer hover:scale-105 transition-all bg-white overflow-hidden">
                 {studentData?.profile_image ? (
                   <img src={`${API_BASE_URL}/uploads/profiles/${studentData.profile_image}`} className="w-full h-full object-cover" alt="Profile" />
@@ -152,15 +155,16 @@ const StudentDashboard = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-8">
+              {/* ANNOUNCEMENT */}
               <div style={{ backgroundColor: branding.theme_color }} className="text-white p-5 rounded-3xl flex items-center gap-5 shadow-xl overflow-hidden relative border-l-8 border-yellow-500">
                 <Megaphone size={24} className="shrink-0 animate-bounce text-yellow-500" />
                 <marquee className="font-black text-xs uppercase tracking-widest italic">
-                   Status: {studentData?.enrollment_status === 'Verified' ? 'Your account is fully verified.' : 'Verification in progress.'}
+                   Status: {studentData?.enrollment_status === 'Verified' ? 'Your account is fully verified for the current school year.' : 'Verification in progress.'}
                 </marquee>
               </div>
 
-              {/* ENROLLMENT DETAILS (WALA NA YUNG MALAKING BILOG) */}
-              <section className="bg-white border border-slate-200 rounded-[2.5rem] p-6 md:p-10 shadow-sm relative overflow-hidden">
+              {/* INFO TABLE */}
+              <section className="bg-white border border-slate-200 rounded-[2.5rem] p-6 md:p-10 shadow-sm relative overflow-hidden group">
                 <h3 className="font-black text-slate-800 mb-8 uppercase text-[10px] tracking-[0.2em] flex items-center gap-2">
                    <CheckCircle2 size={16} className="text-blue-500"/> Enrollment Records
                 </h3>
@@ -176,7 +180,7 @@ const StudentDashboard = () => {
             </div>
 
             <div className="space-y-8">
-               <div className={`p-8 rounded-[2.5rem] border-4 transition-all ${isLocked ? 'bg-red-50 border-red-100 shadow-sm' : 'bg-emerald-50 border-emerald-100 shadow-sm'}`}>
+               <div className={`p-8 rounded-[2.5rem] border-4 transition-all ${isLocked ? 'bg-red-50 border-red-100' : 'bg-emerald-50 border-emerald-100'}`}>
                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">LMS Connection</p>
                  <div className="flex items-center gap-4">
                     <div style={{ backgroundColor: isLocked ? '#ef4444' : branding.theme_color }} className="text-white p-4 rounded-2xl shadow-lg">
@@ -188,14 +192,6 @@ const StudentDashboard = () => {
                        </p>
                        <p className="text-[9px] font-bold text-slate-500 uppercase mt-1">LMS Access Status</p>
                     </div>
-                 </div>
-               </div>
-
-               <div className="bg-slate-900 text-white p-8 rounded-[2.5rem] shadow-2xl overflow-hidden relative">
-                 <h3 className="font-black text-[9px] uppercase tracking-widest mb-6 text-slate-500 italic underline decoration-yellow-500">Quick Access</h3>
-                 <div className="space-y-3 relative z-10">
-                    <DownloadBtn label="Class Schedule" />
-                    <DownloadBtn label="Student Handbook" />
                  </div>
                </div>
             </div>
