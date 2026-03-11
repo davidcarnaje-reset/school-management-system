@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
   User, BookOpen, CreditCard, Lock, Unlock, 
-  LogOut, CheckCircle2, Bell, Megaphone, Info, Download, Menu, X
+  LogOut, GraduationCap, Calendar as CalendarIcon, 
+  CheckCircle2, Bell, Megaphone, Info, Download, Menu, X, ChevronDown
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -18,7 +19,7 @@ const StudentDashboard = () => {
 
   const [branding, setBranding] = useState({
     school_name: 'School Portal',
-    theme_color: '#001f3f', 
+    theme_color: '#001f3f',
     school_logo: ''
   });
 
@@ -44,12 +45,12 @@ const StudentDashboard = () => {
 
   if (loading) return (
     <div className="h-screen flex items-center justify-center bg-slate-50 font-black animate-pulse text-slate-400 uppercase tracking-widest">
-      Updating Dashboard Layout...
+      UPDATING LAYOUT...
     </div>
   );
 
   return (
-    <div className="flex h-screen bg-[#f8fafc] overflow-hidden font-sans text-slate-900">
+    <div className="flex h-screen bg-[#f8fafc] overflow-hidden font-sans">
       
       {/* --- SIDEBAR --- */}
       <aside 
@@ -90,7 +91,7 @@ const StudentDashboard = () => {
       {/* --- MAIN CONTENT AREA --- */}
       <main className="flex-1 overflow-y-auto relative flex flex-col">
         
-        {/* TOP NAVBAR (KAKULAY NG SIDEBAR) */}
+        {/* TOP NAVBAR */}
         <nav 
           style={{ backgroundColor: branding.theme_color }} 
           className="sticky top-0 z-30 px-6 py-3 flex justify-between items-center shadow-lg border-b border-white/10"
@@ -101,7 +102,7 @@ const StudentDashboard = () => {
           </div>
           
           <div className="flex items-center gap-4">
-            <div className="p-2 text-white/70 hover:text-white transition-colors cursor-pointer relative">
+            <div className="p-2 text-white/70 hover:text-white transition-colors cursor-pointer relative hidden xs:block">
                 <Bell size={20}/>
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-yellow-500 rounded-full border-2 border-[#001f3f]"></span>
             </div>
@@ -145,7 +146,7 @@ const StudentDashboard = () => {
               Mabuhay, <span style={{ color: branding.theme_color }}>{studentData?.first_name}!</span>
             </h1>
             <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.3em]">
-               Official Student Access Portal
+               Official Student Access
             </p>
           </header>
 
@@ -154,17 +155,16 @@ const StudentDashboard = () => {
               <div style={{ backgroundColor: branding.theme_color }} className="text-white p-5 rounded-3xl flex items-center gap-5 shadow-xl overflow-hidden relative border-l-8 border-yellow-500">
                 <Megaphone size={24} className="shrink-0 animate-bounce text-yellow-500" />
                 <marquee className="font-black text-xs uppercase tracking-widest italic">
-                   LMS Status: {studentData?.enrollment_status === 'Verified' ? 'Fully Functional' : 'Verification Required'}.
+                   Status: {studentData?.enrollment_status === 'Verified' ? 'Your account is fully verified.' : 'Verification in progress.'}
                 </marquee>
               </div>
 
-              {/* ENROLLMENT DETAILS (Wala na ang malaking bilog dito) */}
+              {/* ENROLLMENT DETAILS (WALA NA YUNG MALAKING BILOG) */}
               <section className="bg-white border border-slate-200 rounded-[2.5rem] p-6 md:p-10 shadow-sm relative overflow-hidden">
-                {/* Tinanggal na ang Background Icon/Bilog dito para luminis */}
                 <h3 className="font-black text-slate-800 mb-8 uppercase text-[10px] tracking-[0.2em] flex items-center gap-2">
-                   <CheckCircle2 size={16} className="text-blue-500"/> Personal & Enrollment Records
+                   <CheckCircle2 size={16} className="text-blue-500"/> Enrollment Records
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-10 gap-x-6 relative z-10">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10 relative z-10">
                    <InfoItem label="Grade Level" value={studentData?.grade_level} />
                    <InfoItem label="Classification" value={studentData?.enrollment_type} />
                    <InfoItem label="School Year" value={studentData?.school_year} />
@@ -176,8 +176,8 @@ const StudentDashboard = () => {
             </div>
 
             <div className="space-y-8">
-               <div className={`p-8 rounded-[2.5rem] border-4 transition-all ${isLocked ? 'bg-red-50 border-red-100' : 'bg-emerald-50 border-emerald-100'}`}>
-                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">LMS Status</p>
+               <div className={`p-8 rounded-[2.5rem] border-4 transition-all ${isLocked ? 'bg-red-50 border-red-100 shadow-sm' : 'bg-emerald-50 border-emerald-100 shadow-sm'}`}>
+                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">LMS Connection</p>
                  <div className="flex items-center gap-4">
                     <div style={{ backgroundColor: isLocked ? '#ef4444' : branding.theme_color }} className="text-white p-4 rounded-2xl shadow-lg">
                        {isLocked ? <Lock size={24}/> : <Unlock size={24}/>}
@@ -186,13 +186,13 @@ const StudentDashboard = () => {
                        <p className={`font-black text-xl leading-none ${isLocked ? 'text-red-700' : 'text-emerald-700'}`}>
                           {isLocked ? 'LOCKED' : 'ACTIVE'}
                        </p>
-                       <p className="text-[9px] font-bold text-slate-500 uppercase mt-1">Classroom Permission</p>
+                       <p className="text-[9px] font-bold text-slate-500 uppercase mt-1">LMS Access Status</p>
                     </div>
                  </div>
                </div>
 
-               <div className="bg-slate-900 text-white p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
-                 <h3 className="font-black text-[9px] uppercase tracking-widest mb-6 text-slate-500 italic underline">Quick Access</h3>
+               <div className="bg-slate-900 text-white p-8 rounded-[2.5rem] shadow-2xl overflow-hidden relative">
+                 <h3 className="font-black text-[9px] uppercase tracking-widest mb-6 text-slate-500 italic underline decoration-yellow-500">Quick Access</h3>
                  <div className="space-y-3 relative z-10">
                     <DownloadBtn label="Class Schedule" />
                     <DownloadBtn label="Student Handbook" />
@@ -216,7 +216,7 @@ const SidebarBtn = ({ icon, label, active, onClick, disabled }) => (
 );
 
 const InfoItem = ({ label, value }) => (
-  <div className="border-l-2 border-slate-100 pl-4">
+  <div>
     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{label}</p>
     <p className="text-[13px] font-black text-slate-900">{value || '---'}</p>
   </div>
