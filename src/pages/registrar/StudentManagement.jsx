@@ -14,6 +14,21 @@ const StudentManagement = () => {
   const [showModal, setShowModal] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
 
+  // 1. Magdagdag ng state para sa View Modal
+    const [viewModal, setViewModal] = useState(false);
+    const [selectedStudent, setSelectedStudent] = useState(null);
+
+    // 2. Function para buksan ang Profile
+    const handleViewProfile = (student) => {
+      setSelectedStudent(student);
+      setViewModal(true);
+    };
+
+    // 3. Simple Print Function
+    const handlePrint = () => {
+      window.print();
+    };
+
   const initialFormState = {
     // STEP 1: Personal Info
     lrn: '', first_name: '', middle_name: '', last_name: '', suffix: '', 
@@ -86,8 +101,17 @@ const StudentManagement = () => {
           </h1>
           <p className="text-slate-500 text-sm italic">Enterprise Registrar Module</p>
         </div>
-        <button onClick={() => { setFormData(initialFormState); setShowModal(true); }} className="shine-effect text-white px-8 py-4 rounded-2xl flex items-center gap-2 shadow-xl font-bold" style={{backgroundColor: branding.theme_color}}>
-          <UserPlus size={20} /> Enroll New Student
+        {/* --- BUTTON WITH HOVER EFFECT --- */}
+        <button 
+          onClick={() => { setFormData(initialFormState); setShowModal(true); }} 
+          className="group relative overflow-hidden text-white px-8 py-4 rounded-2xl flex items-center gap-2 shadow-xl font-bold transition-all duration-300 hover:scale-105 active:scale-95 hover:shadow-2xl" 
+          style={{backgroundColor: branding.theme_color}}
+        >
+          {/* Shine effect on hover */}
+          <div className="absolute inset-0 w-full h-full bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-500 ease-in-out skew-x-12" />
+          
+          <UserPlus size={20} className="group-hover:rotate-12 transition-transform" /> 
+          <span>Enroll New Student</span>
         </button>
       </div>
 
@@ -102,24 +126,74 @@ const StudentManagement = () => {
                </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-               {students.map(s => (
-                  <tr key={s.id} className="hover:bg-slate-50/50 transition-colors">
-                     <td className="p-5">
-                        <p className="font-bold text-slate-800">{s.full_name}</p>
-                        <p className="text-[10px] font-mono text-blue-500 font-bold">{s.student_id}</p>
-                     </td>
-                     <td className="p-5 text-sm">
-                        <p className="font-semibold text-slate-600">{s.grade_level}</p>
-                        <p className="text-[10px] text-slate-400">LRN: {s.lrn || 'N/A'}</p>
-                     </td>
-                     <td className="p-5">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold ${s.is_verified ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                           {s.is_verified ? 'VERIFIED' : 'PENDING'}
-                        </span>
-                     </td>
-                  </tr>
-               ))}
-            </tbody>
+          {loading ? (
+            /* LOADING STATE */
+            <tr>
+              <td colSpan="3" className="p-20 text-center">
+                <div className="flex flex-col items-center gap-3">
+                  <RefreshCw className="animate-spin text-blue-500" size={32} />
+                  <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">
+                    Fetching student records...
+                  </p>
+                </div>
+              </td>
+            </tr>
+          ) : students.length === 0 ? (
+            /* EMPTY STATE */
+            <tr>
+              <td colSpan="3" className="p-20 text-center">
+                <div className="opacity-20 flex flex-col items-center">
+                  <GraduationCap size={64} className="text-slate-400" />
+                  <p className="mt-4 font-black text-slate-500">No Students Enrolled Yet</p>
+                </div>
+              </td>
+            </tr>
+          ) : (
+            /* DATA STATE */
+            students.map((s) => (
+              <tr 
+                key={s.id} 
+                onClick={() => handleViewProfile(s)} 
+                className="hover:bg-blue-50/50 transition-all duration-200 group cursor-pointer active:scale-[0.99]"
+              >
+                <td className="p-5">
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-white text-xs shadow-sm transition-all group-hover:rotate-6 group-hover:scale-110"
+                      style={{ backgroundColor: branding.theme_color || '#2563eb' }}
+                    >
+                      {s.first_name?.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
+                        {s.full_name}
+                      </p>
+                      <p className="text-[10px] font-mono text-slate-400 font-bold uppercase">
+                        ID: {s.student_id}
+                      </p>
+                    </div>
+                  </div>
+                </td>
+                <td className="p-5 text-sm">
+                  <p className="font-bold text-slate-600 flex items-center gap-1">
+                    <BookOpen size={14} className="text-blue-500" /> {s.grade_level}
+                  </p>
+                  <p className="text-[10px] text-slate-400 font-medium">LRN: {s.lrn || 'NOT PROVIDED'}</p>
+                </td>
+                <td className="p-5">
+                  <span className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-tighter shadow-sm flex w-fit items-center gap-1.5 ${
+                    s.is_verified 
+                      ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
+                      : 'bg-amber-50 text-amber-600 border border-amber-100'
+                  }`}>
+                    <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${s.is_verified ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                    {s.is_verified ? 'PORTAL ACTIVE' : 'PENDING INVITE'}
+                  </span>
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
          </table>
       </div>
 
@@ -226,9 +300,113 @@ const StudentManagement = () => {
           </div>
         </div>
       )}
+
+{/* STUDENT PROFILE VIEW MODAL */}
+{viewModal && selectedStudent && (
+  <div className="fixed inset-0 bg-slate-900/60 z-[70] flex items-center justify-center p-4 backdrop-blur-sm print:p-0 print:bg-white">
+    <div className="bg-white rounded-[2.5rem] w-full max-w-4xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden print:shadow-none print:max-h-full print:rounded-none">
+      
+      {/* Modal Header - HIDDEN SA PRINT */}
+      <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white print:hidden">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl"><User size={24}/></div>
+          <h3 className="font-black text-slate-800 tracking-tight">Student Full Profile</h3>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={handlePrint} className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 text-white rounded-xl font-bold text-sm hover:bg-slate-700 transition-all shadow-lg">
+             Print to PDF
+          </button>
+          <button onClick={() => setViewModal(false)} className="p-2.5 bg-slate-100 text-slate-400 hover:text-red-500 rounded-xl transition-colors"><X size={20}/></button>
+        </div>
+      </div>
+
+      {/* PRINTABLE AREA */}
+      <div className="p-10 overflow-y-auto flex-1 print:overflow-visible font-sans" id="printable-profile">
+        
+        {/* Document Header (Logo & School Name) */}
+        <div className="flex justify-between items-start mb-10 border-b-4 pb-6" style={{borderColor: branding.theme_color}}>
+          <div className="flex items-center gap-4">
+             <img src={branding.school_logo} className="w-16 h-16 rounded-xl object-cover" alt="Logo" />
+             <div>
+                <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight">{branding.school_name}</h2>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Official Student Enrollment Record</p>
+             </div>
+          </div>
+          <div className="text-right">
+             <p className="text-[10px] font-black text-slate-400 uppercase">Student ID</p>
+             <p className="text-xl font-mono font-black text-blue-600">{selectedStudent.student_id}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-8">
+          {/* I. PERSONAL INFORMATION */}
+            <div className="col-span-3">
+              <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] mb-4 border-b pb-2">I. Personal Information</h4>
+              <div className="grid grid-cols-4 gap-y-6">
+                  {/* HIWALAY NA PANGALAN */}
+                  <InfoBox label="First Name" value={selectedStudent.first_name} bold />
+                  <InfoBox label="Middle Name" value={selectedStudent.middle_name} />
+                  <InfoBox label="Last Name" value={selectedStudent.last_name} bold />
+                  <InfoBox label="Suffix" value={selectedStudent.suffix} />
+                  
+                  <InfoBox label="LRN" value={selectedStudent.lrn} />
+                  <InfoBox label="Gender" value={selectedStudent.gender} />
+                  <InfoBox label="Date of Birth" value={selectedStudent.dob} />
+                  <InfoBox label="Place of Birth" value={selectedStudent.place_of_birth} />
+                  <InfoBox label="Nationality" value={selectedStudent.nationality} />
+                  <InfoBox label="Religion" value={selectedStudent.religion} />
+                  <InfoBox label="Civil Status" value={selectedStudent.civil_status} />
+              </div>
+            </div>
+
+          {/* PARENT INFO */}
+          <div className="col-span-3 mt-4">
+             <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] mb-4 border-b pb-2">II. Parent / Guardian Details</h4>
+             <div className="grid grid-cols-3 gap-y-6">
+                <InfoBox label="Father's Name" value={selectedStudent.father_name} />
+                <InfoBox label="Occupation" value={selectedStudent.father_occ} />
+                <InfoBox label="Contact" value={selectedStudent.father_contact} />
+                <InfoBox label="Mother's Name" value={selectedStudent.mother_name} />
+                <InfoBox label="Occupation" value={selectedStudent.mother_occ} />
+                <InfoBox label="Contact" value={selectedStudent.mother_contact} />
+             </div>
+          </div>
+
+          {/* III. ACADEMIC RECORD */}
+            <div className="col-span-3 mt-4">
+              <h4 className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] mb-4 border-b pb-2">III. Academic Record</h4>
+              <div className="grid grid-cols-3 gap-y-6">
+                  {/* DINAGDAG NA ENROLLMENT DETAILS */}
+                  <InfoBox label="School Year" value={selectedStudent.school_year} bold />
+                  <InfoBox label="Grade Level" value={selectedStudent.grade_level} bold />
+                  <InfoBox label="Enrollment Type" value={selectedStudent.enrollment_type} />
+                  <div className="col-span-3"><InfoBox label="Previous School" value={selectedStudent.prev_school} /></div>
+              </div>
+            </div>
+        </div>
+
+        {/* Footer for Print */}
+        <div className="hidden print:block mt-20 border-t pt-10">
+           <div className="flex justify-between">
+              <div className="text-center">
+                 <div className="w-48 border-b-2 border-slate-800 mb-2 mx-auto"></div>
+                 <p className="text-[10px] font-bold uppercase">Registrar Signature</p>
+              </div>
+              <div className="text-center">
+                 <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">Date Generated</p>
+                 <p className="text-sm font-bold">{new Date().toLocaleDateString()}</p>
+              </div>
+           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 };
+
 
 // Custom Mini Components for Cleaner Code
 const Input = ({ label, type="text", value, onChange, placeholder, required=false }) => (
@@ -250,3 +428,13 @@ const Select = ({ label, value, onChange, options }) => (
 );
 
 export default StudentManagement;
+
+// --- I-PASTE ITO SA PINAKABABA ---
+const InfoBox = ({ label, value, bold=false }) => (
+  <div className="space-y-1">
+    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
+    <p className={`text-sm ${bold ? 'font-black text-slate-800' : 'font-medium text-slate-600'}`}>
+      {value || '---'}
+    </p>
+  </div>
+);
