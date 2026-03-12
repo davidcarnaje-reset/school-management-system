@@ -189,7 +189,7 @@ const StudentDashboard = () => {
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Remaining Balance</p>
                     <h2 className="text-4xl font-black mt-1">₱ {studentData?.balance || '0.00'}</h2>
                     <button 
-                      onClick={() => navigate('')}
+                      onClick={() => navigate('/student/accounting')}
                       className="mt-6 flex items-center gap-2 text-[9px] font-black uppercase bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full transition-all"
                     >
                       View Breakdown <ArrowRight size={14}/>
