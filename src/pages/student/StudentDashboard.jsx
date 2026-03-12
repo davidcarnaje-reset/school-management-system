@@ -78,7 +78,7 @@ const StudentDashboard = () => {
             onClick={() => !isLocked && navigate('/lms')}
             disabled={isLocked}
           />
-          <SidebarBtn icon={<CreditCard size={18}/>} label="Accounting" onClick={() => navigate('/accounting')} />
+          <SidebarBtn icon={<CreditCard size={18}/>} label="Accounting" onClick={() => navigate('/#')} />
         </nav>
 
         <div className="p-6 border-t border-white/5 bg-black/10">
