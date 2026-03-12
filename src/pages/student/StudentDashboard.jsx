@@ -108,7 +108,7 @@ const StudentDashboard = () => {
         </div>
 
         <nav className="flex-1 p-6 space-y-2 overflow-y-auto">
-          <SidebarBtn icon={<User size={18}/>} label="Dashboard" onClick={() => navigate('/student/dashboard')}/>
+          <SidebarBtn icon={<User size={18}/>} label="Dashboard" active/>
           <SidebarBtn icon={isLocked ? <Lock size={18}/> : <BookOpen size={18}/>} label="LMS Classroom" onClick={() => !isLocked && navigate('/student/lms')} disabled={isLocked} />
           <SidebarBtn icon={<CreditCard size={18}/>} label="Accounting" onClick={() => navigate('/student/accounting')} />
         </nav>
