@@ -13,6 +13,7 @@ import StudentDashboard from './pages/student/StudentDashboard';
 import PaymentDashboard from './pages/cashier/PaymentDashboard';
 import CashierDashboard from './pages/cashier/CashierDashboard';
 import StudentBilling from './pages/cashier/StudentBilling';
+import FeeCatalog from './pages/cashier/FeeCatalog';
 import Scholarships from './pages/cashier/Scholarships';
 import CollectionReports from './pages/cashier/CollectionReports';
 
@@ -96,10 +97,11 @@ function App() {
             <Route index element={<Navigate to="dashboard" replace />} />
 
             <Route path="dashboard" element={<CashierDashboard />} />
-            <Route path="billing" element={<StudentBilling />} />      {/* DAGDAG ITO */}
+            <Route path="billing" element={<StudentBilling />} />     
             <Route path="payments" element={<PaymentDashboard />} />
-            <Route path="scholarships" element={<Scholarships />} />   {/* DAGDAG ITO */}
-            <Route path="reports" element={<CollectionReports />} />   {/* DAGDAG ITO */}
+            <Route path="fees" element={<FeeCatalog />} />
+            <Route path="scholarships" element={<Scholarships />} />  
+            <Route path="reports" element={<CollectionReports />} />  
           </Route>
 
           {/* 5. LMS / TEACHER ROUTES (Kay Joshua) */}
