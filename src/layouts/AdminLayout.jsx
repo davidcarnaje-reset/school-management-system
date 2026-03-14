@@ -3,7 +3,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, Users, Settings, LogOut, Menu, X, 
   BookOpen, CreditCard, UserCircle, Search, Receipt, 
-  History, ClipboardList, GraduationCap, FileText // <-- DAGDAG NA ICONS
+  History, ClipboardList, GraduationCap, Layers, FileText // <-- DAGDAG NA ICONS
 } from 'lucide-react'; 
 import { useAuth } from '../context/AuthContext';
 
@@ -40,6 +40,7 @@ const AdminLayout = () => {
       { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/cashier/dashboard' },
       { icon: <Search size={20} />, label: 'Student Billing', path: '/cashier/billing' },
       { icon: <CreditCard size={20} />, label: 'Process Payment', path: '/cashier/payments' },
+      { icon: <Layers size={20} />, label: 'Fee Catalog', path: '/cashier/fees' },
       { icon: <Receipt size={20} />, label: 'Scholarships', path: '/cashier/scholarships' },
       { icon: <History size={20} />, label: 'Collection Reports', path: '/cashier/reports' },
     ]
