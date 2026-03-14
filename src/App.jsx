@@ -1,13 +1,27 @@
 import React from 'react';
+// React Required Libraries
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+
+// Account Auth
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/routing/ProtectedRoute';
 import PublicRoute from './components/routing/PublicRoute';
-import SetupPassword from './pages/auth/SetupPassword'; // O kung saan mo man sinave
-import ForgotPassword from './pages/auth/ForgotPassword'; // <-- Siguraduhin na tama ang path
+import SetupPassword from './pages/auth/SetupPassword'; 
+import ForgotPassword from './pages/auth/ForgotPassword'; 
 import ResetPassword from './pages/auth/ResetPassword';
-import StudentManagement from './pages/registrar/StudentManagement'; // (Palitan path depende sa kung saan mo sinave)
+
+// ==========================================
+// REGISTRAR PAGES (Na-update para sa bagong flow)
+// ==========================================
+import RegistrarDashboard from './pages/registrar/RegistrarDashboard'; // Placeholder/Gagawin pa
+import StudentManagement from './pages/registrar/StudentManagement'; // Dito ang Profile & Print Profile
+import EnrollmentModule from './pages/registrar/EnrollmentModule';   // Dito ang Fees, Pending/Enrolled, Print COR
+import TeacherAssignments from './pages/registrar/TeacherAssignments'; // Dito ang pag-assign ng Teacher sa Subjects
+
+// Student Pages
 import StudentDashboard from './pages/student/StudentDashboard';
+import StudentAccounting from './pages/student/StudentAccounting';
+import StudentLms from './pages/student/StudentLms';
 
 // Cashier Pages
 import PaymentDashboard from './pages/cashier/PaymentDashboard';
@@ -17,12 +31,12 @@ import FeeCatalog from './pages/cashier/FeeCatalog';
 import Scholarships from './pages/cashier/Scholarships';
 import CollectionReports from './pages/cashier/CollectionReports';
 
-
 // Layouts
 import AdminLayout from './layouts/AdminLayout';
+import StudentLayout from './layouts/StudentLayout';
 
 // Pages
-import LandingPage from './pages/landingpage'; // Ang bagong "Front Door"
+import LandingPage from './pages/landingpage'; 
 import Login from './pages/auth/Login';
 import UserManagement from './pages/admin/UserManagement';
 import BrandingSettings from './pages/admin/BrandingSettings';
@@ -53,49 +67,36 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           
           {/* 2. AUTHENTICATION ROUTES */}
-          {/* Student Login (Manggagaling sa Landing Page Form) */}
           <Route path="/login" element={<PublicRoute><Login portal="student" /></PublicRoute>} />
-          
-          {/* Staff Login (Registrar, Cashier, Teachers) */}
           <Route path="/staff/login" element={<PublicRoute><Login portal="staff" /></PublicRoute>} />
-          
-          {/* SECRET ADMIN LOGIN (Secret Path para sa Security) */}
           <Route path="/portal/admin-access" element={<PublicRoute><Login portal="admin" /></PublicRoute>} />
 
           {/* ACCOUNT SETUP ROUTE (Public) */}
           <Route path="/setup-password" element={<PublicRoute><SetupPassword /></PublicRoute>} />
-
           <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
-
           <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
-
-          {/* Kung gumagamit ka ng ProtectedRoute, ganito: */}
-          <Route path="/student/dashboard" element={<ProtectedRoute allowedRoles={['student']}><StudentDashboard /></ProtectedRoute>} />
-
-{/* O kung basic Route lang muna: */}
-{/* <Route path="/student/dashboard" element={<StudentDashboard />} /> */}
 
           <Route path="/unauthorized" element={<Unauthorized />} />
           
-          {/* 3. ADMIN ROUTES (Gawa mo) */}
+          {/* 3. ADMIN ROUTES */}
           <Route path="/admin" element={
             <ProtectedRoute allowedRoles={['admin']}>
               <AdminLayout />
             </ProtectedRoute>
           }>
+            <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="branding" element={<BrandingSettings />} />
           </Route>
 
-          {/* 4. CASHIER ROUTES (Kay Harvey) */}
+          {/* 4. CASHIER ROUTES */}
           <Route path="/cashier" element={
             <ProtectedRoute allowedRoles={['cashier']}>
               <AdminLayout />
             </ProtectedRoute>
           }>
             <Route index element={<Navigate to="dashboard" replace />} />
-
             <Route path="dashboard" element={<CashierDashboard />} />
             <Route path="billing" element={<StudentBilling />} />     
             <Route path="payments" element={<PaymentDashboard />} />
@@ -104,29 +105,54 @@ function App() {
             <Route path="reports" element={<CollectionReports />} />  
           </Route>
 
-          {/* 5. LMS / TEACHER ROUTES (Kay Joshua) */}
+          {/* 5. LMS / TEACHER ROUTES */}
           <Route path="/teacher" element={
             <ProtectedRoute allowedRoles={['teacher']}>
               <AdminLayout />
             </ProtectedRoute>
           }>
+            <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<div className="p-10 text-2xl font-bold">Teacher Dashboard (Joshua)</div>} />
             <Route path="lessons" element={<div className="p-10 text-2xl font-bold">Lessons Module (Joshua)</div>} />
           </Route>
 
-          {/* 6. REGISTRAR ROUTES (Coming Soon) */}
+          {/* 6. LMS / STUDENTS ROUTES */}
+          <Route path="/student" element={
+            <ProtectedRoute allowedRoles={['student']}>
+              <StudentLayout/>
+            </ProtectedRoute>
+          }>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<StudentDashboard />} />
+            <Route path="lms" element={<StudentLms />} />
+            <Route path="accounting" element={<StudentAccounting />} />
+          </Route>
+
+          {/* ============================================================== */}
+          {/* 7. REGISTRAR ROUTES (NEW FLOW IMPLEMENTED) */}
+          {/* ============================================================== */}
           <Route path="/registrar" element={
             <ProtectedRoute allowedRoles={['registrar']}>
               <AdminLayout />
             </ProtectedRoute>
           }>
-
-            <Route path="/registrar/students" element={<ProtectedRoute allowedRoles={['registrar']}><StudentManagement /></ProtectedRoute>}/>
-            <Route path="dashboard" element={<div className="p-10 text-2xl font-bold text-blue-600">Registrar Command Center</div>} />
-            <Route path="students" element={<div className="p-10 text-2xl font-bold">Student Records (Registrar)</div>} />
+            {/* Kapag nag-type ng /registrar, ire-redirect agad sa dashboard */}
+            <Route index element={<Navigate to="dashboard" replace />} />
+            
+            {/* Sidenav Item 1: Dashboard */}
+            <Route path="dashboard" element={<RegistrarDashboard />} />
+            
+            {/* Sidenav Item 2: Masterlist & Profiles (Walang enrollment details dito) */}
+            <Route path="students" element={<StudentManagement />} />
+            
+            {/* Sidenav Item 3: Enrollment Module (Checklist ng Fees, Sectioning) */}
+            <Route path="enrollment" element={<EnrollmentModule />} />
+            
+            {/* Sidenav Item 4: Teacher & Class Assignments */}
+            <Route path="assignments" element={<TeacherAssignments />} />
           </Route>
 
-          {/* 7. FALLBACK */}
+          {/* 8. FALLBACK */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>

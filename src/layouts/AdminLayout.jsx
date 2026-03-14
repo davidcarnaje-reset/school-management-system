@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, Users, Settings, LogOut, Menu, X, 
-  BookOpen, CreditCard, UserCircle,
-  Search, Receipt, History , Layers
+  BookOpen, CreditCard, UserCircle, Search, Receipt, 
+  History, ClipboardList, GraduationCap, Layers // <-- DAGDAG NA ICONS
 } from 'lucide-react'; 
 import { useAuth } from '../context/AuthContext';
 
@@ -19,16 +19,19 @@ const AdminLayout = () => {
       { icon: <Users size={20} />, label: 'User Management', path: '/admin/users' },
       { icon: <Settings size={20} />, label: 'Branding Engine', path: '/admin/branding' },
     ],
+    // ==========================================
+    // NA-UPDATE NA REGISTRAR FLOW
+    // ==========================================
     registrar: [
       { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/registrar/dashboard' },
-      { icon: <UserCircle size={20} />, label: 'Student Profiling', path: '/registrar/students' },
+      { icon: <UserCircle size={20} />, label: 'Student Masterlist', path: '/registrar/students' },
+      { icon: <ClipboardList size={20} />, label: 'Enrollment Module', path: '/registrar/enrollment' },
+      { icon: <GraduationCap size={20} />, label: 'Class Assignments', path: '/registrar/assignments' },
     ],
     teacher: [
       { icon: <LayoutDashboard size={20} />, label: 'LMS Dashboard', path: '/teacher/dashboard' },
       { icon: <BookOpen size={20} />, label: 'My Lessons', path: '/teacher/lessons' },
     ],
-    // AdminLayout.jsx
-
     cashier: [
       { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/cashier/dashboard' },
       { icon: <Search size={20} />, label: 'Student Billing', path: '/cashier/billing' },
@@ -84,7 +87,6 @@ const AdminLayout = () => {
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           <p className="px-3 text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Main Menu</p>
           {currentMenu.map((item, index) => {
-            // FIX: Dito lang dapat ang isActive
             const isActive = location.pathname === item.path;
 
             return (
@@ -111,8 +113,8 @@ const AdminLayout = () => {
         <div className="p-4 border-t border-slate-800 bg-slate-950/50">
           <div className="flex items-center space-x-3 mb-4 px-2">
              <div 
-                className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold border border-slate-600"
-                style={{ color: branding.theme_color || '#2563eb' }}
+               className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold border border-slate-600"
+               style={{ color: branding.theme_color || '#2563eb' }}
              >
                 {user?.role?.toUpperCase().charAt(0)}
              </div>
@@ -156,7 +158,6 @@ const AdminLayout = () => {
                   System Verified
                 </p>
             </div>
-            {/* PROFILE INITIAL WITH DYNAMIC COLOR */}
             <div 
               className="w-10 h-10 text-white rounded-xl flex items-center justify-center font-bold shadow-md transition-colors"
               style={{ backgroundColor: branding.theme_color || '#2563eb' }}
