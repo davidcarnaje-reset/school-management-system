@@ -19,9 +19,6 @@ const StudentDashboard = () => {
   const fetchData = async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/get_students.php`);
-      
-      // FIX: Dahil ang response ay { students: [], billing_items: [] }, 
-      // kailangang kunin ang array mula sa 'students' key.
       const studentsArray = res.data.students;
 
       if (studentsArray && Array.isArray(studentsArray)) {
@@ -41,8 +38,13 @@ const StudentDashboard = () => {
     if (user?.email) fetchData();
   }, [user.email]);
 
-  // Status check para sa display
+  // Status checks for dynamic UI
   const isUnpaid = studentData?.payment_status === 'Unpaid';
+  const isPartial = studentData?.payment_status === 'Partial';
+  const isPaid = studentData?.payment_status === 'Paid';
+
+  // Helper para sa theme color safety
+  const safeThemeColor = branding?.theme_color?.startsWith('#') ? branding.theme_color : '#3b82f6';
 
   if (loading) return (
     <div className="h-screen flex flex-col items-center justify-center font-black animate-pulse text-slate-400 uppercase tracking-widest gap-4">
@@ -64,25 +66,26 @@ const StudentDashboard = () => {
             <span className="bg-yellow-500 text-[#001f3f] px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-md">
               {studentData?.enrollment_type || 'Continuing'}
             </span>
-            <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-md ${isUnpaid ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'}`}>
+            <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-md ${isUnpaid ? 'bg-red-500 text-white' : isPartial ? 'bg-yellow-500 text-[#001f3f]' : 'bg-emerald-500 text-white'}`}>
               {studentData?.payment_status || 'Pending'}
             </span>
           </div>
           <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter mb-2">
-            Mabuhay, <span style={{ color: branding.theme_color }}>{studentData?.first_name}!</span>
+            Mabuhay, <span style={{ color: safeThemeColor }}>{studentData?.first_name}!</span>
           </h1>
           <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.3em]">Student ID: {studentData?.student_id}</p>
         </div>
       </header>
 
       {/* 2. PAYMENT NOTIFICATION */}
-      {isUnpaid && (
-        <div className="bg-red-50 border-2 border-red-100 p-5 rounded-3xl flex items-center gap-4">
-          <div className="bg-red-500 text-white p-2 rounded-xl shadow-lg shadow-red-200">
-            <Lock size={20} />
+      {(isUnpaid || isPartial) && (
+        <div className={`${isUnpaid ? 'bg-red-50 border-red-100' : 'bg-yellow-50 border-yellow-100'} border-2 p-5 rounded-3xl flex items-center gap-4`}>
+          <div className={`${isUnpaid ? 'bg-red-500' : 'bg-yellow-500'} text-white p-2 rounded-xl shadow-lg`}>
+            {isUnpaid ? <Lock size={20} /> : <Info size={20} />}
           </div>
-          <p className="text-[11px] font-black text-red-900 uppercase tracking-tight">
-            Account Notice: Your account status is currently UNPAID. Please settle your balance.
+          <p className={`text-[11px] font-black uppercase tracking-tight ${isUnpaid ? 'text-red-900' : 'text-yellow-900'}`}>
+            Account Notice: Your account status is {studentData?.payment_status?.toUpperCase()}. 
+            {isUnpaid ? ' Please settle your balance to activate all features.' : ' You have a remaining balance to settle.'}
           </p>
         </div>
       )}
@@ -92,7 +95,7 @@ const StudentDashboard = () => {
           
           {/* 3. FINANCIAL OVERVIEW */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-             <div style={{ backgroundColor: branding.theme_color }} className="p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden group">
+             <div style={{ backgroundColor: safeThemeColor }} className="p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden group">
                 <Wallet size={40} className="mb-6 text-yellow-500" />
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Remaining Balance</p>
                 <h2 className="text-4xl font-black mt-1">₱ {studentData?.balance || '0.00'}</h2>
@@ -106,10 +109,15 @@ const StudentDashboard = () => {
 
              <div className="bg-white border-2 border-slate-100 p-8 rounded-[2.5rem] shadow-sm relative overflow-hidden group">
                 <div className="flex justify-between items-start mb-6">
-                  <div className="p-4 bg-emerald-50 rounded-2xl">
-                    <CheckCircle2 size={24} className="text-emerald-600" />
+                  <div className={`p-4 rounded-2xl ${isUnpaid ? 'bg-red-50' : isPartial ? 'bg-yellow-50' : 'bg-emerald-50'}`}>
+                    {/* DYNAMIC ICON: Red Lock for Unpaid, Yellow Info/Check for Partial, Green Check for Paid */}
+                    {isUnpaid ? (
+                      <Lock size={24} className="text-red-500" />
+                    ) : (
+                      <CheckCircle2 size={24} className={isPartial ? 'text-yellow-600' : 'text-emerald-600'} />
+                    )}
                   </div>
-                  <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase ${isUnpaid ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                  <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase ${isUnpaid ? 'bg-red-100 text-red-700' : isPartial ? 'bg-yellow-100 text-yellow-700' : 'bg-emerald-100 text-emerald-700'}`}>
                     {studentData?.payment_status}
                   </span>
                 </div>
@@ -120,7 +128,7 @@ const StudentDashboard = () => {
           </div>
 
           {/* 4. ANNOUNCEMENTS */}
-          <div style={{ backgroundColor: branding.theme_color }} className="text-white p-5 rounded-3xl flex items-center gap-5 shadow-xl overflow-hidden relative">
+          <div style={{ backgroundColor: safeThemeColor }} className="text-white p-5 rounded-3xl flex items-center gap-5 shadow-xl overflow-hidden relative">
             <Megaphone size={24} className="shrink-0 animate-bounce text-yellow-500" />
             <marquee className="font-black text-xs uppercase tracking-widest italic">Important: School Year {studentData?.school_year} enrollment is ongoing.</marquee>
           </div>
@@ -143,13 +151,16 @@ const StudentDashboard = () => {
 
         {/* 6. SIDE CARDS */}
         <div className="space-y-8">
-           <div className={`p-8 rounded-[2.5rem] border-4 ${isUnpaid ? 'bg-red-50 border-red-100' : 'bg-emerald-50 border-emerald-100'}`}>
+           <div className={`p-8 rounded-[2.5rem] border-4 ${isUnpaid ? 'bg-red-50 border-red-100' : isPartial ? 'bg-yellow-50 border-yellow-100' : 'bg-emerald-50 border-emerald-100'}`}>
              <div className="flex items-center gap-4">
-                <div style={{ backgroundColor: isUnpaid ? '#ef4444' : branding.theme_color }} className="text-white p-4 rounded-2xl shadow-lg">
+                <div style={{ backgroundColor: isUnpaid ? '#ef4444' : isPartial ? '#eab308' : '#10b981' }} className="text-white p-4 rounded-2xl shadow-lg transition-colors duration-500">
+                   {/* DYNAMIC ICON: Lock kapag Unpaid, Unlock kapag may bayad na (Partial/Paid) */}
                    {isUnpaid ? <Lock size={24}/> : <Unlock size={24}/>}
                 </div>
                 <div>
-                   <p className={`font-black text-xl leading-none ${isUnpaid ? 'text-red-700' : 'text-emerald-700'}`}>{isUnpaid ? 'PENDING' : 'ACTIVE'}</p>
+                   <p className={`font-black text-xl leading-none ${isUnpaid ? 'text-red-700' : isPartial ? 'text-yellow-700' : 'text-emerald-700'}`}>
+                     {isUnpaid ? 'PENDING' : 'ACTIVE'}
+                   </p>
                    <p className="text-[9px] font-bold text-slate-500 uppercase mt-1">LMS Access Status</p>
                 </div>
              </div>
