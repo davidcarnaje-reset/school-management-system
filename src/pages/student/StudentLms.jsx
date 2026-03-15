@@ -20,10 +20,21 @@ const StudentLms = () => {
 
   const fetchData = async () => {
     try {
-      const studentRes = await axios.get(`${API_BASE_URL}/get_students.php`);
-      const myData = studentRes.data.find(s => s.email === user.email);
+      const response = await axios.get(`${API_BASE_URL}/get_students.php`);
+      const studentList = response.data.students || [];
+      const myData = studentList.find(s => s.email === user.email);
       
       if (myData) {
+        /**
+         * GATEKEEPER ADD-ON:
+         * Kung ang enrollment_status ay 'Pending' o 'Assessed', 
+         * i-fo-force natin ang payment_status sa 'Unpaid'.
+         */
+        const currentEnrollment = myData.enrollment_status;
+        if (currentEnrollment === 'Pending' || currentEnrollment === 'Assessed' || !myData.payment_status) {
+          myData.payment_status = 'Unpaid';
+        }
+        
         setStudentData(myData);
       }
     } catch (err) {
@@ -37,32 +48,34 @@ const StudentLms = () => {
     if (user?.email) fetchData();
   }, [user.email]);
 
-  // --- UPDATED DEPARTMENT LOGIC ---
   const getDepartment = (grade) => {
     if (!grade) return "N/A";
-    
-    // Kinukuha lang ang numero (e.g., "Grade 12" -> 12)
     const g = parseInt(grade.toString().replace(/\D/g, '')); 
-    
     if (g >= 7 && g <= 10) return "Junior High School";
     if (g === 11 || g === 12) return "Senior High School";
     if (g > 12) return "College Department";
-    
-    // Fallback para sa mga "1st Year", "2nd Year" etc.
     if (grade.toLowerCase().includes('year') || g < 7) return "College Department";
-    
     return "Basic Education";
   };
 
-  const isLocked = !studentData || studentData.payment_status === 'Unpaid';
+  /**
+   * GATEKEEPER CONDITION:
+   * Ang LMS ay mag-lo-lock kung:
+   * 1. Ang payment_status ay 'Unpaid'
+   * 2. O ang enrollment_status ay hindi 'Enrolled'
+   */
+  const isLocked = !studentData || 
+                   studentData.payment_status === 'Unpaid' || 
+                   studentData.enrollment_status !== 'Enrolled';
 
   if (loading) return (
     <div className="h-screen flex flex-col items-center justify-center font-black animate-pulse text-slate-400 uppercase tracking-widest gap-4">
       <Loader2 className="animate-spin text-blue-600" size={40} />
-      Accessing Learning Management System...
+      Verifying Credentials...
     </div>
   );
 
+  // --- LOCK SCREEN VIEW ---
   if (isLocked) {
     return (
       <div className="h-screen w-full flex items-center justify-center p-6 bg-slate-50 font-sans">
@@ -72,7 +85,20 @@ const StudentLms = () => {
           </div>
           <h2 className="text-3xl font-black text-slate-900 tracking-tighter mb-4 uppercase">LMS Locked</h2>
           <p className="text-slate-500 font-medium leading-relaxed mb-8">
-            Paumanhin, <span className="font-black">{studentData?.first_name}</span>. Ang iyong access ay kasalukuyang naka-hold.
+            Paumanhin, <span className="font-black">{studentData?.first_name || 'Estudyante'}</span>. 
+            Hindi ma-access ang LMS dahil sa iyong account status.
+            <br/><br/>
+            <div className="bg-red-50 p-6 rounded-[1.5rem] text-[11px] space-y-2 border border-red-100 shadow-inner">
+                <p className="flex justify-between items-center text-slate-500 font-bold">
+                  PAYMENT STATUS: 
+                  <span className="font-black text-red-600 bg-white px-2 py-1 rounded shadow-sm italic uppercase">{studentData?.payment_status || 'Unpaid'}</span>
+                </p>
+                <p className="flex justify-between items-center text-slate-500 font-bold">
+                  ENROLLMENT: 
+                  <span className="font-black text-red-600 bg-white px-2 py-1 rounded shadow-sm italic uppercase">{studentData?.enrollment_status || 'Pending'}</span>
+                </p>
+            </div>
+            <p className="mt-4 text-[10px] italic">Mangyaring makipag-ugnayan sa Cashier o Registrar.</p>
           </p>
           <button onClick={() => navigate('/student/dashboard')} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-800 transition-all flex items-center justify-center gap-2">
             <ArrowLeft size={14} /> Back to Dashboard
@@ -82,6 +108,7 @@ const StudentLms = () => {
     );
   }
 
+  // --- AUTHORIZED UI (Walang Pagbabago Dito) ---
   const renderClassroomView = (title, icon, color, placeholderText, typeIcon) => (
     <div className="max-w-7xl mx-auto p-4 md:p-8 animate-in slide-in-from-right duration-500">
       <button 
@@ -173,7 +200,7 @@ const StudentLms = () => {
             </h3>
             <div className="space-y-4">
               <StatusItem label="Department" value={getDepartment(studentData?.grade_level)} />
-              <StatusItem label="School Year" value={studentData?.school_year} />
+              <StatusItem label="Payment Status" value={studentData?.payment_status} />
               <StatusItem label="Section" value={studentData?.section} />
             </div>
           </div>
