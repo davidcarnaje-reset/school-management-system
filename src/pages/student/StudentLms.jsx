@@ -30,7 +30,7 @@ const StudentLms = () => {
       const strand = program || ""; 
       return { dept: "Senior High School", displaySection: strand ? `${strand} - ${section}` : section };
     }
-    if (g.includes('YEAR') || gNum > 12 || g.includes('COLLEGE')) return { dept: "College Department", displaySection: section || "TBA" };
+    if (g.includes('YEAR') || gNum > 12 || g.includes('COLLEGE')) return { dept: "College", displaySection: section || "TBA" };
     return { dept: "Basic Education", displaySection: section || "TBA" };
   };
 
