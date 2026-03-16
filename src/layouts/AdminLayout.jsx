@@ -1,70 +1,25 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import axios from 'axios'; // <-- DINAGDAG ANG AXIOS
 import { 
   LayoutDashboard, Users, Settings, LogOut, Menu, X, 
   BookOpen, CreditCard, UserCircle, Search, Receipt, 
   History, ClipboardList, GraduationCap, Layers, FileText,
-  Library, Camera, Lock, Save, BellDot // <-- DINAGDAG ANG ICONS PARA SA PROFILE
+  Library
 } from 'lucide-react'; 
 import { useAuth } from '../context/AuthContext';
+
+// IMPORT NATIN YUNG BAGONG MODAL
+import UserProfileModal from '../components/admin/UserProfileModal'; 
 
 const AdminLayout = () => {
   const { logout, user, branding } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
 
-  // ==========================================
-  // PROFILE MODAL STATES & LOGIC
-  // ==========================================
+  // Modal State na lang ang natira dito
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [profileLoading, setProfileLoading] = useState(false);
-  const [profileData, setProfileData] = useState({
-    full_name: user?.full_name || '',
-    password: ''
-  });
-  const [profileImage, setProfileImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
 
   const API_BASE_URL = "http://localhost/sms-api";
-
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setProfileImage(file);
-      setImagePreview(URL.createObjectURL(file));
-    }
-  };
-
-  const submitProfileUpdate = async (e) => {
-    e.preventDefault();
-    setProfileLoading(true);
-
-    const formData = new FormData();
-    // Assuming user id is in user.id or user.user_id
-    formData.append('id', user?.id || user?.user_id || 1); 
-    formData.append('full_name', profileData.full_name);
-    if (profileData.password) formData.append('password', profileData.password);
-    if (profileImage) formData.append('profile_image', profileImage);
-
-    try {
-      const res = await axios.post(`${API_BASE_URL}/update_user_profile.php`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-
-      if (res.data.success) {
-        alert("Profile updated! Please log in again to see changes.");
-        logout(); // Force logout para mag-update ang session at local storage
-      } else {
-        alert("Error: " + res.data.message);
-      }
-    } catch (error) {
-      console.error(error);
-      alert("Server error updating profile.");
-    } finally {
-      setProfileLoading(false);
-    }
-  };
 
   // --- ROLE-BASED NAVIGATION CONFIG ---
   const menuConfig = {
@@ -82,9 +37,8 @@ const AdminLayout = () => {
       { icon: <GraduationCap size={20} />, label: 'Class Assignments', path: '/registrar/assignments' },
     ],
     teacher: [
-      { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/teacher/dashboard' },
-      { icon: <BellDot size={20} />, label: 'Announcements', path: '/teacher/announcements' },
-      { icon: <UserCircle size={20} />, label: 'Profile', path: '/teacher/profile' },
+      { icon: <LayoutDashboard size={20} />, label: 'LMS Dashboard', path: '/teacher/dashboard' },
+      { icon: <BookOpen size={20} />, label: 'My Lessons', path: '/teacher/lessons' },
     ],
     cashier: [
       { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/cashier/dashboard' },
@@ -99,8 +53,7 @@ const AdminLayout = () => {
   const currentMenu = menuConfig[user?.role] || [];
 
   return (
-    /* FIX 1: h-screen at overflow-hidden para i-lock ang buong view */
-    <div className="flex h-screen overflow-hidden bg-slate-50 relative font-sans">
+    <div className="flex min-h-screen bg-slate-50 relative font-sans">
       
       {/* 1. MOBILE OVERLAY */}
       {isSidebarOpen && (
@@ -111,14 +64,13 @@ const AdminLayout = () => {
       )}
 
       {/* 2. SIDEBAR */}
-      {/* FIX 2: lg:static at h-full para manatili sa kaliwa at hindi gumalaw */}
       <aside className={`
         fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-slate-300 flex flex-col transition-transform duration-300 transform
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
-        lg:translate-x-0 lg:static lg:inset-y-0 shadow-2xl flex-none
+        lg:translate-x-0 lg:static lg:inset-0 shadow-2xl
       `}>
         {/* SIDEBAR HEADER */}
-        <div className="p-6 border-b border-slate-800 flex justify-between items-center flex-none">
+        <div className="p-6 border-b border-slate-800 flex justify-between items-center">
           <div className="flex items-center space-x-3">
             {branding.school_logo ? (
               <img src={branding.school_logo} alt="Logo" className="w-9 h-9 rounded-lg object-cover" />
@@ -139,8 +91,8 @@ const AdminLayout = () => {
           </button>
         </div>
         
-        {/* NAVIGATION LINKS - Naka overflow-y-auto kung sakaling madaming menu items */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-sidebar-scroll">
+        {/* NAVIGATION LINKS */}
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           <p className="px-3 text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Main Menu</p>
           {currentMenu.map((item, index) => {
             const isActive = location.pathname === item.path;
@@ -198,11 +150,8 @@ const AdminLayout = () => {
       </aside>
 
       {/* 3. MAIN CONTENT AREA */}
-      {/* FIX 3: h-full at overflow-hidden dito para ang main content lang ang mag-scroll */}
-      <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        
-        {/* TOP NAVBAR (FIXED/STICKY) */}
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 flex-none">
+      <main className="flex-1 flex flex-col min-w-0">
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-30">
           <div className="flex items-center space-x-4">
             <button 
               className="p-2 rounded-xl bg-slate-50 text-slate-600 lg:hidden hover:bg-slate-100"
@@ -241,92 +190,22 @@ const AdminLayout = () => {
           </div>
         </header>
 
-        {/* PAGE CONTENT CONTAINER */}
-        {/* FIX 4: DITO ANG OVERFLOW-Y-AUTO. Ito lang ang mag-i-scroll. */}
-        <div className="flex-1 overflow-y-auto p-4 lg:p-8 bg-slate-50 custom-main-scroll">
+        {/* PAGE CONTENT */}
+        <div className="p-4 lg:p-8">
           <div className="max-w-7xl mx-auto">
             <Outlet />
           </div>
         </div>
       </main>
 
-      {/* ========================================================= */}
-      {/* 4. USER PROFILE MODAL */}
-      {/* ========================================================= */}
-      {isProfileOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 z-[90] flex items-center justify-center p-4 backdrop-blur-sm">
-          <form onSubmit={submitProfileUpdate} className="bg-white rounded-[2.5rem] w-full max-w-sm shadow-2xl flex flex-col animate-in zoom-in duration-200">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="font-black text-slate-800 tracking-tight flex items-center gap-2">
-                <Settings size={20} className="text-blue-500" /> Account Settings
-              </h3>
-              <button type="button" onClick={() => setIsProfileOpen(false)} className="p-2 text-slate-400 hover:text-red-500"><X size={20}/></button>
-            </div>
-            
-            <div className="p-8 space-y-6">
-              
-              {/* IMAGE UPLOAD SECTION */}
-              <div className="flex flex-col items-center">
-                <div className="relative group cursor-pointer">
-                  <div className="w-24 h-24 rounded-full overflow-hidden bg-slate-100 border-4 border-slate-50 shadow-md">
-                    {imagePreview ? (
-                      <img src={imagePreview} className="w-full h-full object-cover" alt="Preview"/>
-                    ) : user?.profile_image ? (
-                      <img src={`${API_BASE_URL}/uploads/profiles/${user.profile_image}`} className="w-full h-full object-cover" alt="Current"/>
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-4xl font-black text-slate-300">
-                        {user?.full_name?.charAt(0)}
-                      </div>
-                    )}
-                  </div>
-                  <label className="absolute inset-0 flex items-center justify-center bg-black/40 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                    <Camera size={24} />
-                    <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
-                  </label>
-                </div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase mt-3 tracking-widest">Click photo to update</p>
-              </div>
-
-              {/* USER DETAILS */}
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1 tracking-widest flex items-center gap-1.5">
-                    <UserCircle size={12}/> Full Name
-                  </label>
-                  <input 
-                    type="text" 
-                    required
-                    value={profileData.full_name} 
-                    onChange={e=>setProfileData({...profileData, full_name: e.target.value})} 
-                    className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-blue-500 text-sm font-bold text-slate-700" 
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1 tracking-widest flex items-center gap-1.5">
-                    <Lock size={12}/> New Password (Optional)
-                  </label>
-                  <input 
-                    type="password" 
-                    placeholder="Leave blank to keep current"
-                    value={profileData.password} 
-                    onChange={e=>setProfileData({...profileData, password: e.target.value})} 
-                    className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-blue-500 text-sm font-bold text-slate-700" 
-                  />
-                </div>
-              </div>
-
-            </div>
-
-            <div className="p-6 border-t border-slate-100 bg-slate-50 rounded-b-[2.5rem] flex gap-3">
-              <button type="button" onClick={() => setIsProfileOpen(false)} className="flex-1 py-3 font-bold text-slate-500 hover:bg-slate-200 rounded-xl transition-all">Cancel</button>
-              <button type="submit" disabled={profileLoading} className="flex-1 py-3 font-black text-white rounded-xl shadow-lg transition-all flex justify-center items-center gap-2" style={{ backgroundColor: branding.theme_color || '#2563eb' }}>
-                {profileLoading ? <span className="animate-spin">⌛</span> : <><Save size={18}/> Save Changes</>}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+      {/* TINAWAG YUNG MODAL COMPONENT */}
+      <UserProfileModal 
+        isOpen={isProfileOpen} 
+        onClose={() => setIsProfileOpen(false)} 
+        user={user} 
+        branding={branding} 
+        logout={logout} 
+      />
 
     </div>
   );
