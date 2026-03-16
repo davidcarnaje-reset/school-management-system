@@ -30,17 +30,28 @@ const StudentRequests = () => {
     setLoading(true);
     try {
       const res = await axios.get(`${API_BASE_URL}/registrar/get_registrar_requests.php`);
-      setRequests(res.data);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
+      // PUMIPIGIL SA WHITE SCREEN
+      if (Array.isArray(res.data)) {
+        setRequests(res.data);
+      } else {
+        setRequests([]);
+      }
+    } catch (err) { 
+      console.error(err); 
+      setRequests([]);
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   const fetchDocFees = async () => {
     try {
+      // Assuming get_fees_catalog is in root sms-api based on your previous codes
       const res = await axios.get(`${API_BASE_URL}/get_fees_catalog.php`);
-      // Filter lang ang mga DocumentRequest o items sa Other category
-      const docs = res.data.filter(f => f.category === 'DocumentRequest' || f.category === 'Other');
-      setDocFees(docs);
+      if (Array.isArray(res.data)) {
+        const docs = res.data.filter(f => f.category === 'DocumentRequest' || f.category === 'Other');
+        setDocFees(docs);
+      }
     } catch (err) { console.error(err); }
   };
 
@@ -49,8 +60,16 @@ const StudentRequests = () => {
     if (query.length > 2) {
       try {
         const res = await axios.get(`${API_BASE_URL}/registrar/search_students.php?q=${query}`);
-        setStudents(res.data);
-      } catch (err) { console.error(err); }
+        // PUMIPIGIL SA WHITE SCREEN
+        if (Array.isArray(res.data)) {
+          setStudents(res.data);
+        } else {
+          setStudents([]);
+        }
+      } catch (err) { 
+        console.error(err); 
+        setStudents([]);
+      }
     } else {
       setStudents([]);
     }
@@ -60,7 +79,8 @@ const StudentRequests = () => {
     if (!selectedStudent || !selectedFee) return alert("Piliin ang student at dokumento.");
 
     try {
-      const res = await axios.post(`${API_BASE_URL}/add_request.php`, {
+      // IN-UPDATE ANG PATH: Dinagdag ang /registrar/
+      const res = await axios.post(`${API_BASE_URL}/registrar/add_request.php`, {
         student_id: selectedStudent.student_id,
         fee_id: selectedFee
       });
@@ -73,6 +93,8 @@ const StudentRequests = () => {
         setSelectedStudent(null);
         setSelectedFee('');
         setSearchQuery('');
+      } else {
+        alert("Error: " + res.data.message);
       }
     } catch (err) { console.error(err); }
   };
