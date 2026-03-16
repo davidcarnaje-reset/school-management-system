@@ -32,7 +32,7 @@ const StudentManagement = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const stdResponse = await axios.get(`${API_BASE_URL}/get_students.php`);
+      const stdResponse = await axios.get(`${API_BASE_URL}/registrar/get_students_list.php`);
       if (Array.isArray(stdResponse.data)) setStudents(stdResponse.data);
 
       // MOCK FETCH PARA SA PROGRAMS (Palitan niyo na lang ng totoong PHP API later)
@@ -210,12 +210,17 @@ const StudentManagement = () => {
                 <td className="p-5">
                   <div className="flex items-center gap-3">
                     <div 
-                      className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-white text-xs shadow-sm transition-all group-hover:rotate-6 group-hover:scale-110 overflow-hidden bg-slate-200"
-                      style={{ backgroundColor: branding.theme_color || '#2563eb' }}
+                      className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-white text-base shadow-sm transition-all group-hover:rotate-6 group-hover:scale-110 overflow-hidden bg-slate-200"
+                      style={s.profile_image ? {} : { backgroundColor: branding.theme_color || '#2563eb' }}
                     >
+                      {/* DITO YUNG LOGIC SA TABLE: Picture o First Letter */}
                       {s.profile_image ? (
-                        <img src={`${API_BASE_URL}/uploads/profiles/${s.profile_image}`} className="w-full h-full object-cover" alt="profile"/>
-                      ) : s.first_name?.charAt(0)}
+                        <img src={`${API_BASE_URL}/uploads/profiles/${s.profile_image}`} className="w-full h-full object-cover" alt="profile" onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
+                      ) : (
+                        <span className="uppercase">{s.first_name?.charAt(0)}</span>
+                      )}
+                      {/* Ito yung lalabas kung sakaling broken link ang image */}
+                      <span className="hidden uppercase">{s.first_name?.charAt(0)}</span>
                     </div>
                     <div>
                       <p className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
@@ -392,7 +397,6 @@ const StudentManagement = () => {
         </div>
       )}
 
-      {/* STUDENT PROFILE VIEW MODAL (PRINT/PDF) */}
 {/* STUDENT PROFILE VIEW MODAL (PRINT/PDF) */}
 {viewModal && selectedStudent && (
   <div className="fixed inset-0 bg-slate-900/60 z-[70] flex items-center justify-center p-4 backdrop-blur-sm print:p-0 print:bg-white">
@@ -430,18 +434,23 @@ const StudentManagement = () => {
               {/* SMALLER PROFILE IMAGE */}
               <div className="relative">
                  <div className="w-24 h-24 rounded-2xl bg-slate-100 overflow-hidden border-2 border-slate-200 shadow-md flex items-center justify-center">
+                    {/* DITO YUNG LOGIC SA MODAL: Picture o First Letter */}
                     {selectedStudent.profile_image ? (
                        <img 
                           src={`${API_BASE_URL}/uploads/profiles/${selectedStudent.profile_image}`} 
                           className="w-full h-full object-cover"
                           alt="Profile"
+                          onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
                        />
                     ) : (
-                       <div className="flex flex-col items-center text-slate-300">
-                          <User size={40} />
-                          <span className="text-[8px] font-black mt-1">NO PHOTO</span>
+                       <div className="flex items-center justify-center w-full h-full text-slate-400 font-black text-4xl uppercase">
+                          {selectedStudent.first_name?.charAt(0)}
                        </div>
                     )}
+                    {/* Ito yung lalabas kung sakaling broken link ang image */}
+                    <div className="hidden items-center justify-center w-full h-full text-slate-400 font-black text-4xl uppercase">
+                        {selectedStudent.first_name?.charAt(0)}
+                    </div>
                  </div>
               </div>
 
