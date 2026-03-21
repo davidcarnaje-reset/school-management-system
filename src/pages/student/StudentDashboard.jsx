@@ -14,7 +14,6 @@ const StudentDashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [studentData, setStudentData] = useState(null);
-  const [isLmsActive, setIsLmsActive] = useState(false); // Bagong state para sa gatekeeper
 
   // --- STATES FOR MODALS ---
   const [billingItems, setBillingItems] = useState([]); 
@@ -32,37 +31,27 @@ const StudentDashboard = () => {
       if (studentsArray && Array.isArray(studentsArray)) {
         const myData = studentsArray.find(s => s.email === user.email);
         if (myData) {
-          // 1. FILTER ITEMS PARA SA STUDENT NA ITO
+          const total = parseFloat(myData.total_amount || 0);
+          const paid = parseFloat(myData.paid_amount || 0);
+          
           const rawItems = allItems.filter(item => 
             parseInt(item.billing_id) === parseInt(myData.billing_id)
           );
 
-          // 2. TUITION GATEKEEPER LOGIC (DITO NATIN HAHALUKAYIN ANG TUITION)
-          // Hahanapin natin ang item na ang pangalan ay may "Tuition"
-          const tuitionItem = rawItems.find(item => 
-            item.item_name.toLowerCase().includes('tuition')
-          );
-
-          if (tuitionItem) {
-            const tAmount = parseFloat(tuitionItem.amount);
-            const tPaid = parseFloat(tuitionItem.paid_amount || 0);
-            
-            // ACTIVE LANG ANG LMS KUNG ANG BAYAD SA TUITION AY EQUAL O HIGHER SA AMOUNT NITO
-            // Pwede mong palitan ang logic dito (hal. tPaid >= (tAmount * 0.5) kung gusto mo 50% downpayment lang)
-            setIsLmsActive(tPaid >= tAmount); 
-          } else {
-            // Kung walang Tuition fee sa assessment (hal. Full Scholar), i-check ang overall status
-            setIsLmsActive(parseFloat(myData.paid_amount) > 0);
-          }
-
-          // 3. REMAINING BALANCE CALCULATION PARA SA DISPLAY
+          let currentPaidPool = paid;
           const remainingItems = rawItems.map(item => {
-            const itemAmount = parseFloat(item.amount);
-            const itemPaid = parseFloat(item.paid_amount || 0);
-            const bal = itemAmount - itemPaid;
-
-            if (bal <= 0) return null; // Wag nang ipakita kung bayad na
-            return { ...item, amount: bal };
+            let itemAmount = parseFloat(item.amount);
+            if (currentPaidPool > 0) {
+              if (currentPaidPool >= itemAmount) {
+                currentPaidPool -= itemAmount;
+                return null;
+              } else {
+                const newAmount = itemAmount - currentPaidPool;
+                currentPaidPool = 0;
+                return { ...item, amount: newAmount };
+              }
+            }
+            return item;
           }).filter(item => item !== null);
 
           setStudentData(myData);
@@ -89,8 +78,9 @@ const StudentDashboard = () => {
   const remainingBalance = Math.max(0, totalAmount - paidAmount);
 
   const isPaid = paidAmount >= totalAmount && totalAmount > 0;
-  const isPartial = paidAmount > 0 && paidAmount < totalAmount;
   const isUnpaid = paidAmount <= 0;
+  const isPartial = paidAmount > 0 && paidAmount < totalAmount;
+  const isLmsActive = isPaid;
   
   const safeThemeColor = branding?.theme_color?.startsWith('#') ? branding.theme_color : '#3b82f6';
 
@@ -104,6 +94,21 @@ const StudentDashboard = () => {
   return (
     <div className="max-w-6xl mx-auto p-6 md:p-12 w-full space-y-8 animate-in fade-in duration-500 font-sans print:p-0 print:m-0 print:max-w-none">
       
+      {/* ADDED CUSTOM CSS FOR THE SCROLLING TEXT */}
+      <style>
+        {`
+          @keyframes scroll-text {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+          }
+          .animate-scroll {
+            display: inline-block;
+            white-space: nowrap;
+            animation: scroll-text 15s linear infinite;
+          }
+        `}
+      </style>
+
       {/* 1. DASHBOARD CONTENT (HIDDEN ON PRINT) */}
       <div className="print:hidden space-y-8">
         <header className="flex justify-between items-end">
@@ -115,8 +120,9 @@ const StudentDashboard = () => {
               <span className="bg-yellow-500 text-[#001f3f] px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-md">
                 {studentData?.enrollment_type || 'Continuing'}
               </span>
-              <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-md ${isUnpaid ? 'bg-red-500 text-white' : isPartial ? 'bg-yellow-500 text-[#001f3f]' : 'bg-emerald-500 text-white'}`}>
-                {isPaid ? 'Fully Paid' : isPartial ? 'Partial Payment' : 'Unpaid'}
+              <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-md 
+                ${isUnpaid ? 'bg-red-500 text-white' : isPaid ? 'bg-emerald-500 text-white' : 'bg-yellow-500 text-[#001f3f]'}`}>
+                {isPaid ? 'Fully Paid' : isUnpaid ? 'Unpaid' : 'Partial Payment'}
               </span>
             </div>
             <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter mb-2">
@@ -126,13 +132,14 @@ const StudentDashboard = () => {
           </div>
         </header>
 
-        {(!isLmsActive) && (
-          <div className="bg-red-50 border-red-100 border-2 p-5 rounded-3xl flex items-center gap-4">
-            <div className="bg-red-500 text-white p-2 rounded-xl shadow-lg">
-              <Lock size={20} />
+        {(isUnpaid || isPartial) && (
+          <div className={`${isUnpaid ? 'bg-red-50 border-red-100' : 'bg-yellow-50 border-yellow-100'} border-2 p-5 rounded-3xl flex items-center gap-4`}>
+            <div className={`${isUnpaid ? 'bg-red-500' : 'bg-yellow-500'} text-white p-2 rounded-xl shadow-lg`}>
+              {isUnpaid ? <Lock size={20} /> : <Info size={20} />}
             </div>
-            <p className="text-[11px] font-black uppercase tracking-tight text-red-900">
-              LMS Access Restricted: Mangyaring bayaran ang iyong Tuition Fee para ma-activate ang iyong Learning Management System (LMS).
+            <p className={`text-[11px] font-black uppercase tracking-tight ${isUnpaid ? 'text-red-900' : 'text-yellow-900'}`}>
+              Account Notice: Your account status is {isUnpaid ? 'UNPAID' : 'PARTIAL'}. 
+              {isUnpaid ? ' Please settle your balance to activate all features.' : ` You have a remaining balance of ₱${remainingBalance.toLocaleString()} to settle.`}
             </p>
           </div>
         )}
@@ -151,11 +158,11 @@ const StudentDashboard = () => {
 
                 <div className="bg-white border-2 border-slate-100 p-8 rounded-[2.5rem] shadow-sm relative overflow-hidden group">
                   <div className="flex justify-between items-start mb-6">
-                    <div className={`p-4 rounded-2xl ${isUnpaid ? 'bg-red-50' : isPartial ? 'bg-yellow-50' : 'bg-emerald-50'}`}>
-                      {isUnpaid ? <Lock size={24} className="text-red-500" /> : <CheckCircle2 size={24} className={isPartial ? 'text-yellow-600' : 'text-emerald-600'} />}
+                    <div className={`p-4 rounded-2xl ${isUnpaid ? 'bg-red-50' : isPaid ? 'bg-emerald-50' : 'bg-yellow-50'}`}>
+                      {isUnpaid ? <Lock size={24} className="text-red-500" /> : <CheckCircle2 size={24} className={isPaid ? 'text-emerald-600' : 'text-yellow-600'} />}
                     </div>
-                    <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase ${isUnpaid ? 'bg-red-100 text-red-700' : isPartial ? 'bg-yellow-100 text-yellow-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                      {isPaid ? 'Paid' : isPartial ? 'Partial' : 'Unpaid'}
+                    <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase ${isUnpaid ? 'bg-red-100 text-red-700' : isPaid ? 'bg-emerald-100 text-emerald-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                      {isPaid ? 'Paid' : isUnpaid ? 'Unpaid' : 'Partial'}
                     </span>
                   </div>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Latest Payment</p>
@@ -164,9 +171,14 @@ const StudentDashboard = () => {
                 </div>
             </div>
 
+            {/* UPDATED ANNOUNCEMENT BAR WITH WORKING ANIMATION */}
             <div style={{ backgroundColor: safeThemeColor }} className="text-white p-5 rounded-3xl flex items-center gap-5 shadow-xl overflow-hidden relative">
-              <Megaphone size={24} className="shrink-0 animate-bounce text-yellow-500" />
-              <marquee className="font-black text-xs uppercase tracking-widest italic">Important: School Year {studentData?.school_year} enrollment is ongoing.</marquee>
+              <Megaphone size={24} className="shrink-0 animate-bounce text-yellow-500 z-10 bg-inherit pr-2" />
+              <div className="flex-1 overflow-hidden">
+                <p className="animate-scroll font-black text-xs uppercase tracking-widest italic">
+                   Important: School Year {studentData?.school_year} enrollment is ongoing. Please visit the registrar for more details. 
+                </p>
+              </div>
             </div>
 
             <section className="bg-white border border-slate-200 rounded-[2.5rem] p-6 md:p-10 shadow-sm">
@@ -177,7 +189,7 @@ const StudentDashboard = () => {
                  <InfoItem label="Grade Level" value={studentData?.grade_level} />
                  <InfoItem label="Classification" value={studentData?.enrollment_type} />
                  <InfoItem label="School Year" value={studentData?.school_year} />
-                 <InfoItem label="Payment Status" value={isPaid ? 'Fully Paid' : isPartial ? 'Partial' : 'Unpaid'} />
+                 <InfoItem label="Payment Status" value={isPaid ? 'Fully Paid' : isUnpaid ? 'Unpaid' : 'Partial'} />
                  <InfoItem label="Payment Plan" value={studentData?.payment_plan} />
                  <InfoItem label="LRN Number" value={studentData?.lrn} />
               </div>
@@ -186,16 +198,22 @@ const StudentDashboard = () => {
 
           <div className="space-y-8">
               <div className={`p-8 rounded-[2.5rem] border-4 transition-all duration-500 
-                ${isLmsActive ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>
+                ${isLmsActive ? 'bg-emerald-50 border-emerald-100' : 
+                  isUnpaid ? 'bg-red-50 border-red-100' : 
+                  'bg-yellow-50 border-yellow-100'}`}>
                 <div className="flex items-center gap-4">
                    <div className={`text-white p-4 rounded-2xl shadow-lg transition-colors duration-500 
-                      ${isLmsActive ? 'bg-emerald-500' : 'bg-red-500'}`}>
+                      ${isLmsActive ? 'bg-emerald-500' : 
+                        isUnpaid ? 'bg-red-500' : 
+                        'bg-yellow-500'}`}>
                       {isLmsActive ? <Unlock size={24}/> : <Lock size={24}/>}
                    </div>
                    <div>
                       <p className={`font-black text-xl leading-none 
-                        ${isLmsActive ? 'text-emerald-700' : 'text-red-700'}`}>
-                        {isLmsActive ? 'ACTIVE' : 'LOCKED'}
+                        ${isLmsActive ? 'text-emerald-700' : 
+                          isUnpaid ? 'text-red-700' : 
+                          'text-yellow-700'}`}>
+                        {isLmsActive ? 'ACTIVE' : 'INACTIVE'}
                       </p>
                       <p className="text-[9px] font-bold text-slate-500 uppercase mt-1">LMS Access Status</p>
                    </div>
@@ -222,7 +240,6 @@ const StudentDashboard = () => {
       {viewModal.open && studentData && (
         <div className="fixed inset-0 bg-slate-900/60 z-[100] flex items-start justify-center p-4 pt-10 backdrop-blur-sm print:p-0 print:bg-white">
           <div className="bg-white rounded-[2.5rem] w-full max-w-4xl shadow-2xl flex flex-col max-h-[95vh] overflow-hidden print:shadow-none print:max-h-full print:rounded-none animate-in slide-in-from-top-4 duration-300">
-            
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white print:hidden">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl"><CreditCard size={24}/></div>
@@ -332,7 +349,7 @@ const StudentDashboard = () => {
                  <InfoItem label="Grade Level" value={studentData.grade_level} />
                  <InfoItem label="LRN Number" value={studentData.lrn} />
                  <InfoItem label="Contact Email" value={studentData.email} />
-                 <InfoItem label="Account Status" value={isPaid ? 'Fully Paid' : isPartial ? 'Partial' : 'Unpaid'} />
+                 <InfoItem label="Account Status" value={isPaid ? 'Fully Paid' : isUnpaid ? 'Unpaid' : 'Partial'} />
                  <InfoItem label="School Year" value={studentData.school_year} />
               </div>
             </div>
