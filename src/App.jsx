@@ -24,6 +24,7 @@ import ScholarshipApplications from './pages/registrar/ScholarshipApplications';
 import StudentDashboard from './pages/student/StudentDashboard';
 import StudentAccounting from './pages/student/StudentAccounting';
 import StudentLms from './pages/student/StudentLms';
+import StudentScholarship from './pages/student/StudentScholarship';
 
 // Cashier Pages
 import PaymentDashboard from './pages/cashier/PaymentDashboard';
@@ -128,16 +129,17 @@ function App() {
           </Route>
 
           {/* 6. LMS / STUDENTS ROUTES */}
-          <Route path="/student" element={
-            <ProtectedRoute allowedRoles={['student']}>
-              <StudentLayout/>
-            </ProtectedRoute>
-          }>
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<StudentDashboard />} />
-            <Route path="lms" element={<StudentLms />} />
-            <Route path="accounting" element={<StudentAccounting />} />
-          </Route>
+<Route path="/student" element={
+  <ProtectedRoute allowedRoles={['student']}>
+    <StudentLayout/>
+  </ProtectedRoute>
+}>
+  <Route index element={<Navigate to="dashboard" replace />} />
+  <Route path="dashboard" element={<StudentDashboard />} />
+  <Route path="lms" element={<StudentLms />} />
+  <Route path="accounting" element={<StudentAccounting />} />
+  <Route path="scholarship" element={<StudentScholarship />} /> {/* <--- BAGONG DAGDAG */}
+</Route>
 
           {/* ============================================================== */}
           {/* 7. REGISTRAR ROUTES (NEW FLOW IMPLEMENTED) */}

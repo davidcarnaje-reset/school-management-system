@@ -19,6 +19,9 @@ const StudentDashboard = () => {
   const [billingItems, setBillingItems] = useState([]); 
   const [viewModal, setViewModal] = useState({ open: false, type: '' });
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  
+  // --- ADDED STATE FOR ORIGINAL BILLING (PARA SA TUITION CALCULATION) ---
+  const [allBillingItems, setAllBillingItems] = useState([]);
 
   const API_BASE_URL = "http://localhost/sms-api"; 
 
@@ -38,6 +41,10 @@ const StudentDashboard = () => {
             parseInt(item.billing_id) === parseInt(myData.billing_id)
           );
 
+          // Save original items for threshold calculation
+          setAllBillingItems(rawItems);
+
+          // Logic para sa breakdown display (kung ano pa ang kulang)
           let currentPaidPool = paid;
           const remainingItems = rawItems.map(item => {
             let itemAmount = parseFloat(item.amount);
@@ -73,17 +80,50 @@ const StudentDashboard = () => {
     window.print();
   };
 
+  // --- CALCULATION LOGIC ---
   const totalAmount = parseFloat(studentData?.total_amount || 0);
   const paidAmount = parseFloat(studentData?.paid_amount || 0);
-  const tuitionOnly = parseFloat(studentData?.tuition_only_amount || 0); 
   const remainingBalance = Math.max(0, totalAmount - paidAmount);
 
   const isPaid = paidAmount >= totalAmount && totalAmount > 0;
-  const isPartial = paidAmount > 0 && paidAmount < totalAmount;
   const isUnpaid = paidAmount <= 0;
+  const isPartial = paidAmount > 0 && paidAmount < totalAmount;
 
-  const tuitionThreshold = tuitionOnly * 0.5;
-  const isLmsActive = paidAmount >= tuitionThreshold && tuitionThreshold > 0;
+  // --- STRICT ITEM-SPECIFIC LMS LOGIC (NEW UPDATE) ---
+  // Hahanapin natin ang Tuition Item at ang specific na paid_amount nito mula sa database
+  const tuitionItem = allBillingItems.find(item => 
+    item.item_name.toLowerCase().includes('tuition')
+  );
+
+  // Kunin ang actual na bayad na pumasok sa Tuition item lang
+  const actualTuitionPaid = tuitionItem ? parseFloat(tuitionItem.paid_amount || 0) : 0;
+  const tuitionAmount = tuitionItem ? parseFloat(tuitionItem.amount || 0) : 0;
+  const tuitionThreshold = tuitionAmount * 0.5;
+
+  // LMS is active ONLY if:
+  // 1. Fully paid na ang lahat (isPaid)
+  // 2. OR ang ACTUAL payment sa TUITION item ay umabot na sa 50%
+  const isLmsActive = isPaid || (tuitionAmount > 0 && actualTuitionPaid >= tuitionThreshold);
+
+  // --- DYNAMIC STYLES FOR LMS CARD AND NOTICES ---
+  let lmsStatusLabel = "INACTIVE";
+  let lmsBgColor = "bg-red-50 border-red-100";
+  let lmsStatusColor = "bg-red-500";
+  let lmsTextColor = "text-red-700";
+
+  if (isLmsActive) {
+    if (isPaid) {
+      lmsStatusLabel = "ACTIVE";
+      lmsBgColor = "bg-emerald-50 border-emerald-100";
+      lmsStatusColor = "bg-emerald-500";
+      lmsTextColor = "text-emerald-700";
+    } else {
+      lmsStatusLabel = "ACTIVE";
+      lmsBgColor = "bg-yellow-50 border-yellow-100";
+      lmsStatusColor = "bg-yellow-500";
+      lmsTextColor = "text-yellow-700";
+    }
+  }
   
   const safeThemeColor = branding?.theme_color?.startsWith('#') ? branding.theme_color : '#3b82f6';
 
@@ -97,6 +137,20 @@ const StudentDashboard = () => {
   return (
     <div className="max-w-6xl mx-auto p-6 md:p-12 w-full space-y-8 animate-in fade-in duration-500 font-sans print:p-0 print:m-0 print:max-w-none">
       
+      <style>
+        {`
+          @keyframes scroll-text {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+          }
+          .animate-scroll {
+            display: inline-block;
+            white-space: nowrap;
+            animation: scroll-text 15s linear infinite;
+          }
+        `}
+      </style>
+
       {/* 1. DASHBOARD CONTENT (HIDDEN ON PRINT) */}
       <div className="print:hidden space-y-8">
         <header className="flex justify-between items-end">
@@ -108,8 +162,9 @@ const StudentDashboard = () => {
               <span className="bg-yellow-500 text-[#001f3f] px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-md">
                 {studentData?.enrollment_type || 'Continuing'}
               </span>
-              <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-md ${isUnpaid ? 'bg-red-500 text-white' : isPartial ? 'bg-yellow-500 text-[#001f3f]' : 'bg-emerald-500 text-white'}`}>
-                {isPaid ? 'Fully Paid' : isPartial ? 'Partial Payment' : 'Unpaid'}
+              <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-md 
+                ${isUnpaid ? 'bg-red-500 text-white' : isPaid ? 'bg-emerald-500 text-white' : 'bg-yellow-500 text-[#001f3f]'}`}>
+                {isPaid ? 'Fully Paid' : isUnpaid ? 'Unpaid' : 'Partial Payment'}
               </span>
             </div>
             <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter mb-2">
@@ -119,17 +174,24 @@ const StudentDashboard = () => {
           </div>
         </header>
 
-        {(isUnpaid || isPartial) && (
-          <div className={`${isUnpaid ? 'bg-red-50 border-red-100' : 'bg-yellow-50 border-yellow-100'} border-2 p-5 rounded-3xl flex items-center gap-4`}>
-            <div className={`${isUnpaid ? 'bg-red-500' : 'bg-yellow-500'} text-white p-2 rounded-xl shadow-lg`}>
-              {isUnpaid ? <Lock size={20} /> : <Info size={20} />}
-            </div>
-            <p className={`text-[11px] font-black uppercase tracking-tight ${isUnpaid ? 'text-red-900' : 'text-yellow-900'}`}>
-              Account Notice: Your account status is {isUnpaid ? 'UNPAID' : 'PARTIAL'}. 
-              {isUnpaid ? ' Please settle your balance to activate all features.' : ` You have a remaining balance of ₱${remainingBalance.toLocaleString()} to settle.`}
+        {/* --- DYNAMIC ACCOUNT NOTICE --- */}
+        <div className={`border-2 p-5 rounded-3xl flex items-center gap-4 ${!isLmsActive ? 'bg-red-50 border-red-100' : isPaid ? 'bg-emerald-50 border-emerald-100' : 'bg-yellow-50 border-yellow-100'}`}>
+          <div className={`text-white p-2 rounded-xl shadow-lg ${!isLmsActive ? 'bg-red-500' : isPaid ? 'bg-emerald-500' : 'bg-yellow-500'}`}>
+            {!isLmsActive ? <Lock size={20} /> : <CheckCircle2 size={20} />}
+          </div>
+          <div className="flex flex-col">
+            <p className={`text-[11px] font-black uppercase tracking-tight ${!isLmsActive ? 'text-red-900' : isPaid ? 'text-emerald-900' : 'text-yellow-900'}`}>
+              Account Status: {!isLmsActive ? 'LMS ACCESS LOCKED' : isPaid ? 'ACCOUNT FULLY SETTLED' : 'LMS ACCESS ACTIVE (PARTIAL)'}
+            </p>
+            <p className="text-[9px] font-bold text-slate-500 uppercase">
+              {!isLmsActive 
+                ? `Requirement: You need to pay at least ₱${tuitionThreshold.toLocaleString()} (50% of Tuition) to unlock LMS.` 
+                : isPaid 
+                  ? "Enjoy full access to all school services and digital platforms."
+                  : `Tuition milestone reached. Remaining balance of ₱${remainingBalance.toLocaleString()} still applies for other fees.`}
             </p>
           </div>
-        )}
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
@@ -145,11 +207,11 @@ const StudentDashboard = () => {
 
                 <div className="bg-white border-2 border-slate-100 p-8 rounded-[2.5rem] shadow-sm relative overflow-hidden group">
                   <div className="flex justify-between items-start mb-6">
-                    <div className={`p-4 rounded-2xl ${isUnpaid ? 'bg-red-50' : isPartial ? 'bg-yellow-50' : 'bg-emerald-50'}`}>
-                      {isUnpaid ? <Lock size={24} className="text-red-500" /> : <CheckCircle2 size={24} className={isPartial ? 'text-yellow-600' : 'text-emerald-600'} />}
+                    <div className={`p-4 rounded-2xl ${isUnpaid ? 'bg-red-50' : isPaid ? 'bg-emerald-50' : 'bg-yellow-50'}`}>
+                      {isUnpaid ? <Lock size={24} className="text-red-500" /> : <CheckCircle2 size={24} className={isPaid ? 'text-emerald-600' : 'text-yellow-600'} />}
                     </div>
-                    <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase ${isUnpaid ? 'bg-red-100 text-red-700' : isPartial ? 'bg-yellow-100 text-yellow-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                      {isPaid ? 'Paid' : isPartial ? 'Partial' : 'Unpaid'}
+                    <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase ${isUnpaid ? 'bg-red-100 text-red-700' : isPaid ? 'bg-emerald-100 text-emerald-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                      {isPaid ? 'Paid' : isUnpaid ? 'Unpaid' : 'Partial'}
                     </span>
                   </div>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Latest Payment</p>
@@ -159,8 +221,12 @@ const StudentDashboard = () => {
             </div>
 
             <div style={{ backgroundColor: safeThemeColor }} className="text-white p-5 rounded-3xl flex items-center gap-5 shadow-xl overflow-hidden relative">
-              <Megaphone size={24} className="shrink-0 animate-bounce text-yellow-500" />
-              <marquee className="font-black text-xs uppercase tracking-widest italic">Important: School Year {studentData?.school_year} enrollment is ongoing.</marquee>
+              <Megaphone size={24} className="shrink-0 animate-bounce text-yellow-500 z-10 bg-inherit pr-2" />
+              <div className="flex-1 overflow-hidden">
+                <p className="animate-scroll font-black text-xs uppercase tracking-widest italic">
+                    Important: School Year {studentData?.school_year} enrollment is ongoing. Please visit the registrar for more details. 
+                </p>
+              </div>
             </div>
 
             <section className="bg-white border border-slate-200 rounded-[2.5rem] p-6 md:p-10 shadow-sm">
@@ -171,7 +237,7 @@ const StudentDashboard = () => {
                  <InfoItem label="Grade Level" value={studentData?.grade_level} />
                  <InfoItem label="Classification" value={studentData?.enrollment_type} />
                  <InfoItem label="School Year" value={studentData?.school_year} />
-                 <InfoItem label="Payment Status" value={isPaid ? 'Fully Paid' : isPartial ? 'Partial' : 'Unpaid'} />
+                 <InfoItem label="Payment Status" value={isPaid ? 'Fully Paid' : isUnpaid ? 'Unpaid' : 'Partial'} />
                  <InfoItem label="Payment Plan" value={studentData?.payment_plan} />
                  <InfoItem label="LRN Number" value={studentData?.lrn} />
               </div>
@@ -179,26 +245,36 @@ const StudentDashboard = () => {
           </div>
 
           <div className="space-y-8">
-              <div className={`p-8 rounded-[2.5rem] border-4 transition-all duration-500 
-                ${isPaid ? 'bg-emerald-50 border-emerald-100' : 
-                  isUnpaid ? 'bg-red-50 border-red-100' : 
-                  'bg-yellow-50 border-yellow-100'}`}>
+              {/* LMS ACCESS STATUS CARD - DYNAMICALLY UPDATED */}
+              <div className={`p-8 rounded-[2.5rem] border-4 transition-all duration-500 ${lmsBgColor}`}>
                 <div className="flex items-center gap-4">
-                   <div className={`text-white p-4 rounded-2xl shadow-lg transition-colors duration-500 
-                      ${isPaid ? 'bg-emerald-500' : 
-                        isUnpaid ? 'bg-red-500' : 
-                        'bg-yellow-500'}`}>
+                   <div className={`text-white p-4 rounded-2xl shadow-lg transition-colors duration-500 ${lmsStatusColor}`}>
                       {isLmsActive ? <Unlock size={24}/> : <Lock size={24}/>}
                    </div>
                    <div>
-                      <p className={`font-black text-xl leading-none 
-                        ${isPaid ? 'text-emerald-700' : 
-                          isUnpaid ? 'text-red-700' : 
-                          'text-yellow-700'}`}>
-                        {isLmsActive ? 'ACTIVE' : 'INACTIVE'}
+                      <p className={`font-black text-xl leading-none ${lmsTextColor}`}>
+                        {lmsStatusLabel}
                       </p>
                       <p className="text-[9px] font-bold text-slate-500 uppercase mt-1">LMS Access Status</p>
                    </div>
+                </div>
+                
+                <div className="mt-4">
+                   {!isLmsActive && (
+                     <p className="text-[8px] font-bold text-red-700 uppercase italic leading-tight">
+                        * Minimum of 50% tuition payment (₱{tuitionThreshold.toLocaleString()}) required.
+                     </p>
+                   )}
+                   {isLmsActive && !isPaid && (
+                     <p className="text-[8px] font-bold text-yellow-700 uppercase italic leading-tight">
+                        * LMS Active (Tuition Milestone reached).
+                     </p>
+                   )}
+                   {isPaid && (
+                     <p className="text-[8px] font-bold text-emerald-700 uppercase italic leading-tight">
+                        * LMS Active (Account Fully Paid).
+                     </p>
+                   )}
                 </div>
               </div>
 
@@ -222,7 +298,6 @@ const StudentDashboard = () => {
       {viewModal.open && studentData && (
         <div className="fixed inset-0 bg-slate-900/60 z-[100] flex items-start justify-center p-4 pt-10 backdrop-blur-sm print:p-0 print:bg-white">
           <div className="bg-white rounded-[2.5rem] w-full max-w-4xl shadow-2xl flex flex-col max-h-[95vh] overflow-hidden print:shadow-none print:max-h-full print:rounded-none animate-in slide-in-from-top-4 duration-300">
-            
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white print:hidden">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl"><CreditCard size={24}/></div>
@@ -249,7 +324,6 @@ const StudentDashboard = () => {
                   <div>
                     <h1 className="text-xl font-black text-slate-900 uppercase leading-tight">{branding.school_name}</h1>
                     <p className="text-[10px] font-bold text-slate-500 tracking-widest uppercase mb-2">Office of the Finance & Accounting</p>
-                    {/* BINALIK SA text-xl DITO PARA PANTAY SA SCHOOL NAME */}
                     <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight leading-none mb-2">{studentData.first_name} {studentData.last_name}</h2>
                     <p className="font-mono text-sm font-bold text-slate-500">ID: {studentData.student_id} • ₱ {remainingBalance.toLocaleString()} Balance</p>
                   </div>
@@ -318,7 +392,6 @@ const StudentDashboard = () => {
                   <div>
                     <h1 className="text-xl font-black text-slate-900 uppercase leading-tight">{branding.school_name}</h1>
                     <p className="text-[10px] font-bold text-slate-500 tracking-widest uppercase mb-4">Official Enrollment Profile</p>
-                    {/* BINALIK SA text-xl DITO PARA PANTAY SA SCHOOL NAME */}
                     <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight mb-2">{studentData.first_name} {studentData.last_name}</h2>
                     <div className="flex items-center gap-3">
                       <span className="bg-slate-900 text-white px-3 py-1 rounded-lg font-mono text-xs">ID: {studentData.student_id}</span>
@@ -334,7 +407,7 @@ const StudentDashboard = () => {
                  <InfoItem label="Grade Level" value={studentData.grade_level} />
                  <InfoItem label="LRN Number" value={studentData.lrn} />
                  <InfoItem label="Contact Email" value={studentData.email} />
-                 <InfoItem label="Account Status" value={isPaid ? 'Fully Paid' : isPartial ? 'Partial' : 'Unpaid'} />
+                 <InfoItem label="Account Status" value={isPaid ? 'Fully Paid' : isUnpaid ? 'Unpaid' : 'Partial'} />
                  <InfoItem label="School Year" value={studentData.school_year} />
               </div>
             </div>

@@ -18,47 +18,43 @@ const StudentAccounting = () => {
   const API_BASE_URL = "http://localhost/sms-api"; 
 
   const fetchData = async () => {
-    try {
-      const res = await axios.get(`${API_BASE_URL}/get_students.php`);
-      const allStudents = res.data.students; 
-      const allItems = res.data.billing_items;
-      const myData = allStudents.find(s => s.email === user.email);
-      
-      if (myData) {
-        const total = parseFloat(myData.total_amount || 0);
-        const paid = parseFloat(myData.paid_amount || 0);
-        const calculatedBalance = Math.max(0, total - paid);
-        myData.balance = calculatedBalance.toFixed(2);
+  try {
+    const res = await axios.get(`${API_BASE_URL}/get_students.php`);
+    const allStudents = res.data.students; 
+    const allItems = res.data.billing_items;
+    const myData = allStudents.find(s => s.email === user.email);
+    
+    if (myData) {
+      // 1. Kunin lahat ng items para sa billing na ito
+      const rawItems = allItems.filter(item => 
+        parseInt(item.billing_id) === parseInt(myData.billing_id)
+      );
 
-        let currentPaidPool = paid;
-        const rawItems = allItems.filter(item => 
-          parseInt(item.billing_id) === parseInt(myData.billing_id)
-        );
+      // 2. Filter logic: Ipakita lang ang items na may utang pa (Amount > Paid Amount)
+      const remainingItems = rawItems.map(item => {
+        const amount = parseFloat(item.amount || 0);
+        const paid = parseFloat(item.paid_amount || 0); // Gamitin ang actual paid per item
+        const itemBalance = amount - paid;
 
-        const remainingItems = rawItems.map(item => {
-          let itemAmount = parseFloat(item.amount);
-          if (currentPaidPool > 0) {
-            if (currentPaidPool >= itemAmount) {
-              currentPaidPool -= itemAmount;
-              return null;
-            } else {
-              const newAmount = itemAmount - currentPaidPool;
-              currentPaidPool = 0;
-              return { ...item, amount: newAmount };
-            }
-          }
-          return item;
-        }).filter(item => item !== null);
+        // Kung bayad na ang item na ito (balance is 0), wag na isama sa listahan
+        if (itemBalance <= 0) return null;
 
-        setStudentData(myData);
-        setBillingItems(remainingItems);
-      }
-    } catch (err) {
-      console.error("Error fetching accounting data:", err);
-    } finally {
-      setLoading(false);
+        return { ...item, amount: itemBalance }; // Ipakita ang natitirang babayaran
+      }).filter(item => item !== null);
+
+      // 3. I-calculate ang overall balance base sa natitirang items
+      const totalBalance = remainingItems.reduce((acc, item) => acc + item.amount, 0);
+      myData.balance = totalBalance.toFixed(2);
+
+      setStudentData(myData);
+      setBillingItems(remainingItems);
     }
-  };
+  } catch (err) {
+    console.error("Error fetching accounting data:", err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     if (user?.email) fetchData();
@@ -145,11 +141,41 @@ const StudentAccounting = () => {
               </div>
             </div>
 
-            <div style={{ backgroundColor: safeThemeColor }} className="text-white p-4 md:p-5 rounded-2xl md:rounded-3xl flex items-center gap-4 md:gap-5 shadow-xl">
-              <Megaphone size={20} className="shrink-0 animate-bounce text-yellow-500 md:w-6 md:h-6" />
-              <marquee className="font-black text-[10px] md:text-xs uppercase tracking-widest italic">Important: Please settle any outstanding balance to avoid late enrollment penalties.</marquee>
-            </div>
+            <div 
+  style={{ backgroundColor: safeThemeColor }} 
+  className="text-white p-4 md:p-5 rounded-2xl md:rounded-3xl flex items-center gap-4 md:gap-5 shadow-xl overflow-hidden relative"
+>
+  {/* Custom CSS para sa scrolling animation */}
+  <style>
+    {`
+      @keyframes scroll-text {
+        0% { transform: translateX(100%); }
+        100% { transform: translateX(-100%); }
+      }
+      .animate-marquee {
+        display: inline-block;
+        white-space: nowrap;
+        animation: scroll-text 15s linear infinite;
+      }
+    `}
+  </style>
 
+  {/* Megaphone Icon - Naka-z-index para laging nasa ibabaw */}
+  <div className="z-10 bg-inherit pr-2">
+    <Megaphone 
+      size={20} 
+      className="shrink-0 animate-bounce text-yellow-500 md:w-6 md:h-6" 
+    />
+  </div>
+
+  {/* Moving Text Container */}
+  <div className="flex-1 overflow-hidden">
+    <p className="animate-marquee font-black text-[10px] md:text-xs uppercase tracking-widest italic">
+      Important: Please settle any outstanding balance to avoid late enrollment penalties. &nbsp;&nbsp;&nbsp;&nbsp; 
+      Important: Please settle any outstanding balance to avoid late enrollment penalties.
+    </p>
+  </div>
+</div>
             <section className="bg-white border border-slate-200 rounded-[2rem] md:rounded-[2.5rem] p-5 md:p-10 shadow-sm overflow-hidden">
               <h3 className="font-black text-slate-800 mb-6 md:mb-8 uppercase text-[9px] md:text-[10px] tracking-[0.2em] flex items-center gap-2">
                 <Receipt size={16} className="text-blue-500"/> Assessment Details

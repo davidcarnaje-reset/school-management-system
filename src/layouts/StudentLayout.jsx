@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import { 
-  User, BookOpen, CreditCard, LogOut, Menu, X 
+  User, BookOpen, CreditCard, LogOut, Menu, X, GraduationCap
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
@@ -48,17 +48,20 @@ const StudentLayout = () => {
   }, [user?.email, fetchData]);
 
   const studentMenu = [
-    { icon: <User size={18}/>, label: "Dashboard", path: "/student/dashboard" },
-    { icon: <BookOpen size={18}/>, label: "LMS Classroom", path: "/student/lms" },
-    { icon: <CreditCard size={18}/>, label: "Accounting", path: "/student/accounting" },
-  ];
+  { icon: <User size={18}/>, label: "Dashboard", path: "/student/dashboard" },
+  { icon: <BookOpen size={18}/>, label: "LMS Classroom", path: "/student/lms" },
+  { icon: <CreditCard size={18}/>, label: "Accounting", path: "/student/accounting" },
+  { icon: <GraduationCap size={18}/>, label: "Scholarship", path: "/student/scholarship" }, // Bago ito
+];
 
-  const getPageTitle = () => {
-    if (location.pathname.includes('dashboard')) return 'Student Dashboard';
-    if (location.pathname.includes('accounting')) return 'Accounting Portal';
-    if (location.pathname.includes('lms')) return 'LMS Classroom';
-    return 'Student Portal';
-  };
+// 2. I-update ang getPageTitle logic
+const getPageTitle = () => {
+  if (location.pathname.includes('dashboard')) return 'Student Dashboard';
+  if (location.pathname.includes('accounting')) return 'Accounting Portal';
+  if (location.pathname.includes('lms')) return 'LMS Classroom';
+  if (location.pathname.includes('scholarship')) return 'Scholarship Application'; // Bago ito
+  return 'Student Portal';
+};
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
