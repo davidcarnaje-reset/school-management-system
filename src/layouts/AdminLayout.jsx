@@ -6,7 +6,7 @@ import {
   BookOpen, CreditCard, UserCircle, Search, Receipt, 
   History, ClipboardList, GraduationCap, Layers, FileText,
   Library, Award, ChevronLeft, ChevronRight, MapPin,
-  Bell, Megaphone 
+  Bell, Megaphone, Banknote
 } from 'lucide-react'; 
 import { useAuth } from '../context/AuthContext';
 import UserProfileModal from '../components/admin/UserProfileModal'; 
@@ -120,7 +120,8 @@ const AdminLayout = () => {
         { icon: <Receipt size={20} />, label: 'Scholarships', path: '/cashier/scholarships' },
         { icon: <BookOpen size={20} />, label: 'Scholarship Catalog', path: '/cashier/scholarship-catalog' },
         { icon: <History size={20} />, label: 'Collection Reports', path: '/cashier/reports' },
-    ]
+        { icon: <Banknote size={20} />, label: 'Payroll', path: '/cashier/payroll' },
+      ]
   };
 
   const currentMenu = menuConfig[user?.role] || [];
