@@ -102,7 +102,7 @@ const TeacherLayout = () => {
       };
 
       fetchNotifications();
-      const intervalId = setInterval(fetchNotifications, 60000); 
+      const intervalId = setInterval(fetchNotifications, 30000); 
       return () => clearInterval(intervalId);
     }
   }, [user, API_BASE_URL]);
@@ -159,19 +159,43 @@ const TeacherLayout = () => {
     } catch (err) {}
   };
 
-  const handleNotifClick = (notif) => {
-    if (notif.is_read === 0 || notif.is_read === "0" || notif.is_read === false) {
+  // 🟢 Ginawang async function para makapag-wait sa Axios
+  const handleNotifClick = async (notif) => { 
+    const isCurrentlyUnread = notif.is_read === 0 || notif.is_read === "0" || notif.is_read === false;
+    
+    if (isCurrentlyUnread) {
+      // 1. Update UI agad (Optimistic UI) para mawala agad yung blue dot
       setNotifications(prev => prev.map(n => n.id === notif.id ? {...n, is_read: 1} : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
+
+      // 2. 🟢 I-SAVE SA DATABASE ANG READ STATUS (Gamit ang mark_single_read.php)
+      try {
+        const token = localStorage.getItem('sms_token');
+        await axios.post(`${API_BASE_URL}/notifications/mark_single_read.php`, {
+          notification_id: notif.id,
+          user_id: user.id,
+          role: user.role
+        }, { headers: { Authorization: `Bearer ${token}` } });
+      } catch (error) {
+        console.error("Failed to mark read in DB", error);
+      }
     }
+
+    // 3. Buksan ang Modal at ipasa ang tamang data
     setSelectedNotif({
       id: notif.id,
       type: notif.type || 'Announcement',
       title: notif.title,
       message: notif.message,
       sender: notif.sender_name || notif.sender_role || 'Admin',
+      
+      // 🟢 Siguraduhing naipasa ang sender_role para lumabas ang reaction buttons 
+      // kung registrar o cashier ang nag-send
+      sender_role: notif.sender_role ? notif.sender_role.toLowerCase() : '',
+      
       time: notif.created_at ? new Date(notif.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Recently',
-      attachment: notif.attachment
+      attachment: notif.attachment,
+      reaction: notif.reaction
     });
   };
 
@@ -195,10 +219,15 @@ const TeacherLayout = () => {
     setActiveMenuNotif(prev => ({...prev, is_read: isCurrentlyUnread ? 1 : 0}));
   };
 
-  const filteredNotifs = notifications.filter(notif => {
-    if (notifFilter === 'all') return true;
-    return notif.is_read === 0 || notif.is_read === "0" || notif.is_read === false;
-  });
+  // 🟢 FIX: I-filter para Announcements lang at hindi kasama ang Task Reminder
+const filteredNotifs = notifications.filter(notif => {
+  // 1. Siguraduhin na HINDI Task Reminder ang type
+  if (notif.type === 'Task Reminder') return false;
+
+  // 2. I-apply ang existing filter (All vs Unread)
+  if (notifFilter === 'all') return true;
+  return notif.is_read === 0 || notif.is_read === "0" || notif.is_read === false;
+});
 
   const displayedNotifications = showAllInDropdown ? filteredNotifs : filteredNotifs.slice(0, 6);
   
@@ -241,6 +270,12 @@ const TeacherLayout = () => {
       main: path.split('/').pop()?.replace('-', ' ') || 'Dashboard', 
       sub: '' 
     };
+  };
+
+  const handleUpdateLayoutReaction = (notifId, newReaction) => {
+    setNotifications(prevNotifs => prevNotifs.map(notif => 
+      notif.id === notifId ? { ...notif, reaction: newReaction } : notif
+    ));
   };
 
   return (
@@ -290,69 +325,71 @@ const TeacherLayout = () => {
 </div>
         
         <nav className="flex-1 py-6 px-3 space-y-2 sidebar-scroll">
-          {currentMenu.map((item, index) => {
-            const isActive = location.pathname === item.path || (location.pathname.startsWith('/teacher/sections') && item.path === '/teacher/classes') || (location.pathname.startsWith('/teacher/activities') && item.path === '/teacher/activities');
-            return (
+  {currentMenu.map((item, index) => {
+    const isActive = location.pathname === item.path || 
+                     (location.pathname.startsWith('/teacher/sections') && item.path === '/teacher/classes') || 
+                     (location.pathname.startsWith('/teacher/activities') && item.path === '/teacher/activities');
+    return (
+      <Link 
+        key={index} 
+        to={item.path} 
+        state={item.state} 
+        onClick={() => setIsSidebarOpen(false)} 
+        className={`flex items-center rounded-2xl transition-all duration-300 group relative ${
+          isCollapsed ? 'lg:justify-center p-3.5' : 'gap-4 px-4 p-3.5'
+        } ${isActive ? 'text-white shadow-md border border-white/40' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'}`}
+        style={isActive ? { backgroundColor: themeColor } : {}}
+      >
+        <span className={`w-6 h-6 flex items-center justify-center shrink-0 ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-slate-800'} transition-transform group-hover:scale-110`}>
+          {item.icon}
+        </span>
+        
+        <span className={`font-bold text-sm transition-all duration-300 whitespace-nowrap ${isCollapsed ? 'lg:hidden' : ''}`}>
+          {item.label}
+        </span>
+      </Link>
+    );
+  })}
+  
+  {teachingClasses.length > 0 && (
+    <div className="pt-4 mt-4 border-t border-slate-200/60">
+      <p className={`px-3 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 transition-all duration-300 ${isCollapsed ? 'lg:hidden' : ''}`}>
+        Teaching
+      </p>
+      <div className="space-y-1">
+        {teachingClasses.map(cls => {
+          const isActiveClass = location.pathname.includes(`/${cls.id}`);
+          return (
             <Link 
-                  key={index} 
-                  to={item.path} 
-                  state={item.state} 
-                  onClick={() => setIsSidebarOpen(false)} 
-                  className={`flex items-center p-3.5 rounded-2xl transition-all duration-300 group relative gap-4 px-4 ${
-                    isActive ? 'text-white shadow-md border border-white/40' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
-                  }`}
-                  style={isActive ? { backgroundColor: themeColor } : {}}
-                >
-                  <span className={`w-6 h-6 flex items-center justify-center shrink-0 ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-slate-800'} transition-transform group-hover:scale-110`}>
-                    {item.icon}
-                  </span>
-                  
-                  <span className={`font-bold text-sm transition-all duration-300 whitespace-nowrap ${isCollapsed ? 'lg:hidden' : ''}`}>
-                    {item.label}
-                  </span>
-                </Link>
-                );
-          })}
-          
-          {teachingClasses.length > 0 && (
-            <div className="pt-4 mt-4 border-t border-slate-200/60">
-              <p className={`px-3 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 transition-all duration-300 ${isCollapsed ? 'lg:hidden' : ''}`}>
-                Teaching
-              </p>
-              <div className="space-y-1">
-                {teachingClasses.map(cls => {
-                  const isActiveClass = location.pathname.includes(`/${cls.id}`);
-                  return (
-                   <Link 
-                        key={cls.id} 
-                        to={`/teacher/activities/${cls.id}`} 
-                        state={{ tab: 'Stream' }} 
-                        onClick={() => setIsSidebarOpen(false)} 
-                        className={`flex items-center p-2.5 rounded-2xl transition-all duration-200 group relative gap-3 ${
-                          isActiveClass ? 'text-white shadow-md border border-white/40' : 'hover:bg-slate-100/50 border border-transparent'
-                        }`}
-                        style={isActiveClass ? { backgroundColor: themeColor } : {}}
-                      >
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0 transition-all ${
-                          isActiveClass ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-500 group-hover:bg-slate-300 group-hover:text-slate-700'
-                        }`}>
-                          {cls.subject?.charAt(0) || 'C'}
-                        </div>
-                        <div className={`flex flex-col min-w-0 transition-all duration-300 ${isCollapsed ? 'lg:hidden' : 'flex-1'}`}>
-                          <span className={`text-[13px] font-bold truncate ${isActiveClass ? 'text-white' : 'text-slate-900 group-hover:text-slate-800'}`}>
-                            {cls.subject}
-                          </span>
-                          <span className={`text-[10px] font-semibold truncate ${isActiveClass ? 'text-white/80' : 'text-slate-500'}`}>
-                            {cls.section_name || cls.section}
-                          </span>
-                        </div>
-                      </Link>
-                  );
-                })}
+              key={cls.id} 
+              to={`/teacher/activities/${cls.id}`} 
+              state={{ tab: 'Stream' }} 
+              onClick={() => setIsSidebarOpen(false)} 
+              className={`flex items-center rounded-2xl transition-all duration-200 group relative ${
+                isCollapsed ? 'lg:justify-center p-2.5' : 'gap-3 p-2.5'
+              } ${isActiveClass ? 'text-white shadow-md border border-white/40' : 'hover:bg-slate-100/50 border border-transparent'}`}
+              style={isActiveClass ? { backgroundColor: themeColor } : {}}
+            >
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0 transition-all ${
+                isActiveClass ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-500 group-hover:bg-slate-300 group-hover:text-slate-700'
+              }`}>
+                {cls.subject?.charAt(0) || 'C'}
               </div>
-            </div>
-          )}
-        </nav>
+              <div className={`flex flex-col min-w-0 transition-all duration-300 ${isCollapsed ? 'lg:hidden' : 'flex-1'}`}>
+                <span className={`text-[13px] font-bold truncate ${isActiveClass ? 'text-white' : 'text-slate-900 group-hover:text-slate-800'}`}>
+                  {cls.subject}
+                </span>
+                <span className={`text-[10px] font-semibold truncate ${isActiveClass ? 'text-white/80' : 'text-slate-500'}`}>
+                  {cls.section_name || cls.section}
+                </span>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  )}
+</nav>
 
         <button 
           onClick={() => setIsCollapsed(!isCollapsed)} 
@@ -570,6 +607,7 @@ const TeacherLayout = () => {
         isOpen={!!selectedNotif} 
         onClose={() => setSelectedNotif(null)} 
         notification={selectedNotif} 
+        onReactionUpdate={handleUpdateLayoutReaction}
       />
 
       {activeMenuNotif && (
