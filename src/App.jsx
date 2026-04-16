@@ -58,9 +58,12 @@ import TeacherLayout from './layouts/TeacherLayout';
 // Pages
 import LandingPage from './pages/landingpage'; 
 import Login from './pages/auth/Login';
+
+// Admin Pages
 import UserManagement from './pages/admin/UserManagement';
 import BrandingSettings from './pages/admin/BrandingSettings';
 import RoomManagement from './pages/admin/RoomManagement';
+import LandingPromotions from './pages/admin/LandingPromotions';
 
 
 // Placeholder Components
@@ -111,6 +114,7 @@ function App() {
             <Route path="users" element={<UserManagement />} />
             <Route path="branding" element={<BrandingSettings />} />
             <Route path="rooms" element={<RoomManagement />} />
+            <Route path="promotions" element={<LandingPromotions />} />
           </Route>
 
           {/* 4. CASHIER ROUTES */}

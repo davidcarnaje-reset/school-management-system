@@ -6,7 +6,7 @@ import {
   BookOpen, CreditCard, UserCircle, Search, Receipt, 
   History, ClipboardList, GraduationCap, Layers, FileText,
   Library, Award, ChevronLeft, ChevronRight, MapPin,
-  Bell, Megaphone, Banknote, FileCheck2 
+  Bell, Megaphone, Banknote, FileCheck2, Image
 } from 'lucide-react'; 
 import { useAuth } from '../context/AuthContext';
 import UserProfileModal from '../components/admin/UserProfileModal'; 
@@ -83,6 +83,7 @@ const AdminLayout = () => {
       { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/admin/dashboard' },
       { icon: <Users size={20} />, label: 'User Management', path: '/admin/users' },
       { icon: <Settings size={20} />, label: 'Branding Engine', path: '/admin/branding' },
+      { icon: <Image size={20} />, label: 'Landing Banners', path: '/admin/promotions' },
       { icon: <MapPin size={20} />, label: 'Room Management', path: '/admin/rooms' },
     ],
     registrar: [
