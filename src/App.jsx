@@ -22,7 +22,7 @@ import AcademicPrograms from './pages/registrar/AcademicPrograms';
 import ScholarshipApplications from './pages/registrar/ScholarshipApplications';
 import RegistrarSubjects from './pages/registrar/RegistrarSubjects';
 import SectionManagement from './pages/registrar/SectionManagement';
-import StudentGrades from './pages/registrar/StudentGradesView';
+import StudentGradesView from './pages/registrar/StudentGradesView';
 
 // ==========================================
 // STUDENT PAGES
@@ -36,6 +36,7 @@ import StudentScholarship from './pages/student/StudentScholarship';
 // LMS PAGES (BAGO)
 // ==========================================
 import LmsDashboard from './pages/lms/LmsDashboard';
+import StudentGrades from './pages/student/StudentGrades';
 
 // ==========================================
 // CASHIER PAGES
@@ -181,7 +182,8 @@ function App() {
             <Route path="dashboard" element={<StudentDashboard />} />
             <Route path="lms" element={<StudentLms />} />
             <Route path="accounting" element={<StudentAccounting />} />
-            <Route path="scholarship" element={<StudentScholarship />} /> 
+            <Route path="scholarship" element={<StudentScholarship />} />
+            <Route path="grades" element={<StudentGrades />} /> 
           </Route>
 
 
@@ -203,7 +205,7 @@ function App() {
             <Route path="scholarships" element={<ScholarshipApplications />} />
             <Route path="subjects" element={<RegistrarSubjects />} />
             <Route path="sections" element={<SectionManagement />} />
-            <Route path="grades" element={<StudentGrades />} />
+            <Route path="grades" element={<StudentGradesView />} />
           </Route>
 
           {/* =======================================================

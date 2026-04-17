@@ -15,38 +15,29 @@ const StudentLms = () => {
   const [loading, setLoading] = useState(true);
   const [studentData, setStudentData] = useState(null);
 
-  // --- MOCK DATA FOR GATEWAY SUMMARY ---
-  const lmsAnalytics = {
+  // --- REAL DATABASE STATES ---
+  const [scheduleToday, setScheduleToday] = useState([]);
+  const [pendingTasks, setPendingTasks] = useState([]);
+  const [recentGrades, setRecentGrades] = useState([]);
+  
+  // Mixed State (GWA is real, Hours/Sessions are mock for now until we have tracking tables)
+  const [lmsAnalytics, setLmsAnalytics] = useState({
     totalHours: 28.5,
     sessions: 42,
     completionRate: 85,
-    currentGwa: "1.25"
-  };
-
-  const scheduleToday = [
-    { time: "08:00 AM - 09:30 AM", subject: "CORE-MATH", room: "Room 101", type: "Lecture" },
-    { time: "10:00 AM - 11:30 AM", subject: "APPLIED-ECON", room: "Online Zoom", type: "Virtual" },
-  ];
-
-  const pendingTasks = [
-    { title: "Chapter 1 Quiz", subject: "CORE-MATH", due: "Today, 11:59 PM" },
-    { title: "Reaction Paper", subject: "APPLIED-ECON", due: "Tomorrow, 08:00 AM" }
-  ];
-
-  const recentGrades = [
-    { subject: "CORE-MATH", grade: "92", status: "Passed" },
-    { subject: "CORE-SCI", grade: "88", status: "Passed" },
-    { subject: "APPLIED-ECON", grade: "Pending", status: "Ongoing" },
-  ];
+    currentGwa: "0.00"
+  });
 
   const fetchData = async () => {
     try {
+      // 1. FETCH STUDENT & BILLING
       const response = await axios.get(`${API_BASE_URL}/student/get_students.php`);
       const studentList = response.data.students || [];
       const billingItems = response.data.billing_items || []; 
       const myData = studentList.find(s => s.email === user.email);
       
       if (myData) {
+        // --- GATEKEEPER LOGIC ---
         const totalAmount = parseFloat(myData.total_amount || 0);
         const totalPaidOverall = parseFloat(myData.paid_amount || 0);
         const isPaidFull = totalPaidOverall >= (totalAmount - 1); 
@@ -64,7 +55,6 @@ const StudentLms = () => {
         const actualTuitionPaid = tuitionItem ? parseFloat(tuitionItem.paid_amount) : totalPaidOverall;
         const tuitionThreshold = totalTuitionPrice * 0.5; 
 
-        // THE SMART GATEKEEPER
         const isValidStatus = ["Enrolled", "Assessed"].includes((myData.enrollment_status || "").trim());
         const hasPaidThreshold = actualTuitionPaid >= (tuitionThreshold - 1);
         const isOfficiallyPaid = myData.computedPaymentStatus === 'Partial Payment' || myData.computedPaymentStatus === 'Fully Paid';
@@ -79,8 +69,50 @@ const StudentLms = () => {
 
         myData.displayTuition = totalTuitionPrice; 
         myData.actualTuitionPaid = actualTuitionPaid;
-        
         setStudentData(myData);
+
+// 2. FETCH REAL SCHEDULE & TASKS
+        try {
+          const acadRes = await axios.get(`${API_BASE_URL}/student/get_student_dashboard_data.php?student_id=${myData.student_id}`);
+          if (acadRes.data.success) {
+            setScheduleToday(acadRes.data.scheduleToday || []);
+            setPendingTasks(acadRes.data.pendingTasks || []);
+            
+            // 📌 IDAGDAG ITO PARA MASALO ANG BAGONG STATS MULA SA PHP
+            if (acadRes.data.analytics) {
+              setLmsAnalytics(prev => ({
+                 ...prev,
+                 totalHours: acadRes.data.analytics.totalHours,
+                 sessions: acadRes.data.analytics.sessions,
+                 completionRate: acadRes.data.analytics.completionRate
+              }));
+            }
+          }
+        } catch (e) { console.error("Academic Data Error:", e); }
+
+        // 3. FETCH REAL GRADES FOR GWA & RECENT SUBJECTS
+        try {
+          const currentSy = myData.school_year || '2023-2024';
+          const gradeRes = await axios.get(`${API_BASE_URL}/student/get_student_grades.php?email=${user.email}&sy=${currentSy}`);
+          if (gradeRes.data.status === 'success') {
+             const gradesData = gradeRes.data.data || [];
+             
+             // Get top 3 subjects
+             setRecentGrades(gradesData.slice(0, 3).map(g => ({
+                subject: g.code,
+                grade: g.final || 'Pending',
+                status: g.remarks || 'Ongoing'
+             })));
+
+             // Compute Real GWA
+             if (gradesData.length > 0) {
+                 const total = gradesData.reduce((acc, curr) => acc + parseFloat(curr.final || 0), 0);
+                 const gwa = (total / gradesData.length).toFixed(2);
+                 setLmsAnalytics(prev => ({ ...prev, currentGwa: gwa }));
+             }
+          }
+        } catch (e) { console.error("Grades Data Error:", e); }
+
       }
     } catch (err) {
       console.error("Error fetching LMS status:", err);
@@ -206,7 +238,6 @@ const StudentLms = () => {
                   <p className="text-sm font-medium text-white/80 mb-8 leading-relaxed max-w-lg mx-auto md:mx-0">
                     Your LMS account is fully unlocked. You can now access your learning modules, video lectures, discussions, and take your quizzes.
                   </p>
-                  {/* ARCHITECT FIX: Ito ang magre-redirect sa hiwalay na LMS portal */}
                   <button onClick={() => navigate('/lms/dashboard')} className="w-full md:w-auto px-10 py-4 bg-white text-slate-900 rounded-2xl font-black uppercase text-[11px] tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center gap-2 shadow-xl hover:-translate-y-1 active:scale-95">
                     Continue to LMS <ArrowUpRight size={16} />
                   </button>
@@ -234,7 +265,7 @@ const StudentLms = () => {
              </div>
 
              <div className="space-y-3">
-               {recentGrades.map((grade, idx) => (
+               {recentGrades.length > 0 ? recentGrades.map((grade, idx) => (
                  <div key={idx} className="flex justify-between items-center p-4 border border-slate-100 rounded-2xl hover:bg-slate-50 transition-colors">
                     <div className="flex items-center gap-4">
                        <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center"><FileText size={16}/></div>
@@ -247,7 +278,9 @@ const StudentLms = () => {
                        </span>
                     </div>
                  </div>
-               ))}
+               )) : (
+                 <div className="text-center py-4 text-slate-400 font-bold text-xs">No grades encoded yet.</div>
+               )}
              </div>
           </div>
         </div>
@@ -270,7 +303,7 @@ const StudentLms = () => {
                     <div>
                       <h4 className="text-sm font-black text-slate-800 uppercase leading-tight">{sched.subject}</h4>
                       <p className="text-[11px] font-bold text-slate-500 mt-1">{sched.time}</p>
-                      <p className="text-[10px] font-bold text-slate-400 mt-0.5">{sched.room}</p>
+                      <p className="text-[10px] font-bold text-slate-400 mt-0.5">{sched.room || 'TBA'}</p>
                     </div>
                   </div>
                 ))
@@ -290,7 +323,7 @@ const StudentLms = () => {
                   <CheckCircle2 size={18} className="text-yellow-400"/> Pending Tasks
                </h3>
                <div className="space-y-4">
-                  {pendingTasks.map((task, i) => (
+                  {pendingTasks.length > 0 ? pendingTasks.map((task, i) => (
                     <div key={i} className="p-5 rounded-[1.5rem] bg-white/10 border border-white/5 hover:bg-white/20 transition-colors cursor-pointer">
                        <div className="flex justify-between items-start mb-2">
                           <span className="text-[9px] font-black uppercase tracking-widest text-yellow-400 bg-yellow-400/10 px-2 py-1 rounded-md">{task.subject}</span>
@@ -300,13 +333,10 @@ const StudentLms = () => {
                          <Clock size={10}/> Due: {task.due}
                        </span>
                     </div>
-                  ))}
+                  )) : (
+                     <div className="text-center py-6 text-white/50 font-bold text-xs">No pending tasks!</div>
+                  )}
                </div>
-               {pendingTasks.length > 0 && (
-                 <button className="w-full mt-6 py-3 border border-white/20 rounded-xl text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/10 transition-colors">
-                    View All Requirements
-                 </button>
-               )}
             </div>
           </div>
 
