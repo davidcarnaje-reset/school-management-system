@@ -37,6 +37,10 @@ import StudentScholarship from './pages/student/StudentScholarship';
 // ==========================================
 import LmsDashboard from './pages/lms/LmsDashboard';
 import StudentGrades from './pages/student/StudentGrades';
+import LmsSchedule from './pages/lms/LmsSchedule';
+import LmsCourses from './pages/lms/LmsCourses';
+import LmsSingleSubject from './pages/lms/LmsSingleSubject';
+import LmsProfile from './pages/lms/LmsProfile';
 
 // ==========================================
 // CASHIER PAGES
@@ -218,6 +222,10 @@ function App() {
             </ProtectedRoute>
           }>
             <Route path="dashboard" element={<LmsDashboard />} />
+            <Route path="calendar" element={<LmsSchedule />} />
+            <Route path="courses" element={<LmsCourses />} />
+            <Route path="course/:id" element={<LmsSingleSubject />} />
+            <Route path="profile" element={<LmsProfile />} />
           </Route>
 
           {/* 9. FALLBACK */}
