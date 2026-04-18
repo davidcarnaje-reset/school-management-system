@@ -61,6 +61,7 @@ import Login from './pages/auth/Login';
 import UserManagement from './pages/admin/UserManagement';
 import BrandingSettings from './pages/admin/BrandingSettings';
 import RoomManagement from './pages/admin/RoomManagement';
+import CashierLayout from './layouts/CashierLayout';
 
 
 // Placeholder Components
@@ -116,7 +117,7 @@ function App() {
           {/* 4. CASHIER ROUTES */}
           <Route path="/cashier" element={
             <ProtectedRoute allowedRoles={['cashier']}>
-              <AdminLayout />
+              <CashierLayout />
             </ProtectedRoute>
           }>
             <Route index element={<Navigate to="dashboard" replace />} />
