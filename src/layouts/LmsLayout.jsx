@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { 
   Home, Calendar, Bell, User, Power, BookMarked, 
@@ -6,7 +6,10 @@ import {
   Layers, FileText, Video, CheckSquare, Award, PieChart, Users,
   Library
 } from 'lucide-react';
+import axios from 'axios'; // <--- Import natin ang axios
 import { useAuth } from '../context/AuthContext';
+
+
 
 const LmsLayout = () => {
   const { user, branding, API_BASE_URL } = useAuth();
@@ -72,6 +75,37 @@ const LmsLayout = () => {
   const currentCourseTabId = searchParams.get('tab') || 'all';
   const activeCourseTab = courseTabs.find(t => t.id === currentCourseTabId) || courseTabs[0];
 
+// ==========================================
+  // HEARTBEAT LOGIC (Time Tracking & Login Count)
+  // ==========================================
+  useEffect(() => {
+    // Kunin ang tamang ID (student_id o student_number depende sa AuthContext mo)
+    // Kunin ang ID gamit ang totoong property names mula sa AuthContext mo
+      const studentIdentifier = user?.id || user?.username;
+
+    if (!studentIdentifier) return; // Wag i-run kung walang nahanap na ID
+
+    // 1. I-record ang login kapag bumukas ang LMS
+    axios.post(`${API_BASE_URL}/lms/track_activity.php`, {
+      student_id: studentIdentifier, // <--- ITO ANG SUSI! Pinalitan natin from user_id
+      type: 'login'
+    })
+    .then(res => console.log("LMS Tracker (Login):", res.data))
+    .catch(err => console.error("Tracker Error:", err));
+
+    // 2. Set Interval para mag "Ping" kada 60 seconds (1 minute)
+    const interval = setInterval(() => {
+      axios.post(`${API_BASE_URL}/lms/track_activity.php`, {
+        student_id: studentIdentifier, // <--- Pinalitan din natin dito
+        type: 'ping'
+      })
+      .then(res => console.log("LMS Tracker (Ping):", res.data))
+      .catch(err => console.error("Ping Error:", err));
+    }, 60000); // 60000 ms = 1 minute
+
+    // Cleanup: Patayin ang interval kapag umalis sa LMS o nag-logout
+    return () => clearInterval(interval);
+  }, [user, API_BASE_URL]);
   // ==========================================
   // SCROLL "LIQUID GLASS" LOGIC
   // ==========================================
@@ -160,13 +194,13 @@ const LmsLayout = () => {
         </aside>
       )}
 
-      {/* ========================================================
+{/* ========================================================
           2. MAIN CONTENT AREA & HEADER (SCROLL GLASS EFFECT)
           ======================================================== */}
       <div className="flex-1 flex flex-col min-w-0 h-full relative">
          
-         {/* THE IOS 26 HEADER: Transparents on top, Frosted Glass on scroll */}
-         <header className={`h-20 px-6 flex justify-between items-center sticky top-0 z-50 transition-all duration-500 ease-out ${isNavVisible ? 'translate-y-0' : '-translate-y-full'} ${isScrolled ? 'bg-white/60 backdrop-blur-[20px] saturate-150 border-b border-white/50 shadow-sm' : 'bg-transparent border-b-transparent'}`}>
+         {/* THE IOS 26 HEADER: Pinalitan ng 'absolute' imbes na 'sticky' para pumatong sa content */}
+         <header className={`absolute top-0 left-0 right-0 h-20 px-6 flex justify-between items-center z-50 transition-all duration-500 ease-out ${isNavVisible ? 'translate-y-0' : '-translate-y-full'} ${isScrolled ? 'bg-white/80 backdrop-blur-[20px] saturate-150 border-b border-white/50 shadow-sm' : 'bg-transparent border-b-transparent'}`}>
             <div className="flex items-center gap-3">
                {branding?.school_logo && <img src={`${API_BASE_URL}/uploads/branding/${branding.school_logo}`} className="w-10 h-10 object-contain drop-shadow-sm" alt="Logo" />}
                <h2 className="font-black text-slate-800 tracking-tight hidden sm:block">LMS HUB</h2>
@@ -188,7 +222,9 @@ const LmsLayout = () => {
 
          {/* MAIN SCROLL AREA */}
          <main className="flex-1 overflow-y-auto px-4 md:px-8 pb-40 scroll-smooth" onScroll={handleScroll}>
-            <div className="max-w-[1400px] mx-auto py-6">
+            {/* DITO ANG MAGIC: Nilagyan natin ng 'pt-24' (padding-top). 
+                Dahil nasa loob siya ng main, sasama itong space pataas kapag nag-scroll ka! */}
+            <div className="max-w-[1400px] mx-auto pt-24 pb-6">
                <Outlet />
             </div>
          </main>
