@@ -100,7 +100,7 @@ const LmsLayout = () => {
 
   const categoryFilters = getDynamicCategories();
 
-  // ==========================================
+// ==========================================
   // [ SECTION 5: ROUTE CONTEXT & LOGIC ]
   // ==========================================
   const currentPath = location.pathname;
@@ -113,11 +113,29 @@ const LmsLayout = () => {
   const currentCourseTabId = searchParams.get('tab') || 'all';
   const activeCourseTab = courseTabs.find(t => t.id === currentCourseTabId) || courseTabs[0];
 
-  // ARCHITECT FIX: I-reset ang category sa 'all' tuwing lilipat ng page!
+  // ARCHITECT FIX 1: I-reset ang category sa 'all' tuwing lilipat ng page!
   useEffect(() => {
     setActiveCategory('all');
     setIsMobileSubMenuOpen(false); // Isara na rin natin ang mobile drawer para sure
   }, [location.pathname]);
+
+  // ARCHITECT FIX 2: IBINALIK ANG ACTIVITY TRACKER / HEARTBEAT
+  useEffect(() => {
+    const studentIdentifier = user?.id || user?.username;
+    if (!studentIdentifier) return;
+
+    // Track Login/Access immediately
+    axios.post(`${API_BASE_URL}/lms/track_activity.php`, { student_id: studentIdentifier, type: 'login' })
+      .catch(err => console.error("Tracker Error:", err));
+
+    // Continuous Ping every 60 seconds para alam ng system na online pa si student
+    const interval = setInterval(() => {
+      axios.post(`${API_BASE_URL}/lms/track_activity.php`, { student_id: studentIdentifier, type: 'ping' })
+        .catch(err => console.error("Ping Error:", err));
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [user, API_BASE_URL]);
 
   const handleScroll = (e) => {
     const currentScrollY = e.target.scrollTop;
@@ -136,7 +154,6 @@ const LmsLayout = () => {
     navigate(path);
     setIsMobileSubMenuOpen(false);
   };
-
   // ==========================================
   // [ SECTION 6: UI RENDER ]
   // ==========================================

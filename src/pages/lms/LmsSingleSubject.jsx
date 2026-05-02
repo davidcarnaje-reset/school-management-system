@@ -270,8 +270,32 @@ const LmsSingleSubject = () => {
                                  <div className="flex flex-wrap items-center gap-3">
                                     {post.type === 'video' && <button className="px-5 py-2.5 bg-rose-50 text-rose-600 rounded-xl text-xs font-black flex items-center gap-2 hover:bg-rose-100 transition-colors"><Video size={16} /> Watch Video</button>}
                                     {post.type === 'lecture' && <button className="px-5 py-2.5 bg-blue-50 text-blue-600 rounded-xl text-xs font-black flex items-center gap-2 hover:bg-blue-100 transition-colors"><FileDown size={16} /> Download PDF</button>}
-                                    {(post.type === 'activity' || post.type === 'exam') && !post.score && <button className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-black flex items-center gap-2 hover:bg-indigo-700 transition-colors shadow-md"><Award size={16} /> Turn In Work</button>}
-                                    {post.score && <div className="px-5 py-2.5 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-black border border-emerald-100">Graded: {post.score}/{post.total}</div>}
+                                    {/* KUNG EXAM O ACTIVITY NA PWEDE PANG I-TAKE O RETAKE */}
+                                    {(post.type === 'activity' || post.type === 'exam') && (post.attempts < post.max_attempts || !post.status || post.status === 'Pending') && (
+                                    <button 
+                                       onClick={() => navigate(`/lms/exam/${post.id.replace('act_', '')}`)} 
+                                       className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-black flex items-center gap-2 hover:bg-indigo-700 transition-colors shadow-md transition-all group"
+                                    >
+                                       <Award size={16} className="group-hover:scale-110 transition-transform" /> 
+                                       {post.attempts > 0 ? `Retake Exam (${post.attempts}/${post.max_attempts} Tries)` : 'Take Exam / Activity'}
+                                    </button>
+                                    )}
+
+                                    {/* KUNG GRADED NA AT NA-EXHAUST NA LAHAT NG ATTEMPTS */}
+                                    {(post.type === 'activity' || post.type === 'exam') && post.status === 'Graded' && post.attempts >= post.max_attempts && (
+                                    <div className="px-5 py-2.5 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-black border border-emerald-100 flex items-center gap-2">
+                                       <CheckCircle size={16} /> 
+                                       Graded: {post.score}/{post.total} (Used: {post.attempts}/{post.max_attempts} Tries)
+                                    </div>
+                                    )}
+
+                                    {/* KUNG NA-SUBMIT NA PERO HINDI PA NAMA-MARKAHAN NG TEACHER (Lalo na kung may Essay) */}
+                                    {(post.type === 'activity' || post.type === 'exam') && post.status === 'Submitted' && post.attempts >= post.max_attempts && (
+                                    <div className="px-5 py-2.5 bg-amber-50 text-amber-600 rounded-xl text-xs font-black border border-amber-100 flex items-center gap-2">
+                                       <Clock size={16} /> 
+                                       Waiting for Grade
+                                    </div>
+                                    )}
                                     <button className="px-4 py-2.5 text-slate-400 hover:text-slate-600 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors"><MessageCircle size={16} /> Add class comment</button>
                                  </div>
                               </div>

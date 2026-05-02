@@ -41,6 +41,7 @@ import LmsSchedule from './pages/lms/LmsSchedule';
 import LmsCourses from './pages/lms/LmsCourses';
 import LmsSingleSubject from './pages/lms/LmsSingleSubject';
 import LmsProfile from './pages/lms/LmsProfile';
+import LmsTakeExam from './pages/lms/LmsTakeExam';
 
 // ==========================================
 // CASHIER PAGES
@@ -230,7 +231,14 @@ function App() {
             <Route path="profile" element={<LmsProfile />} />
           </Route>
 
-          {/* 9. FALLBACK */}
+          {/* 9. LMS Exam Route (Direct Access) */}
+          <Route path="/lms/exam/:activityId" element={
+            <ProtectedRoute allowedRoles={['student']}>
+                <LmsTakeExam />
+            </ProtectedRoute>
+          } />
+
+          {/* 10. FALLBACK */}
           <Route path="*" element={<Navigate to="/" replace />} />
           
         </Routes>
