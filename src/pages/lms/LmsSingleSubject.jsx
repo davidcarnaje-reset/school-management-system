@@ -15,12 +15,8 @@ const LmsSingleSubject = () => {
   const currentTab = searchParams.get('tab') || 'all';
   const { user, API_BASE_URL } = useAuth();
 
-  // ==========================================
-  // [ SECTION 1: INSTANT HEADER LOAD ]
-  // Kukunin natin ang basic subject info mula sa Layout para instant lumabas ang banner!
-  // ==========================================
-  const { courses } = useOutletContext();
-  const currentCourse = courses?.find(c => String(c.class_id) === String(id)) || {};
+// [ SECTION 1: INSTANT HEADER LOAD ]
+  const [courseInfo, setCourseInfo] = useState({ tag: 'SYNCING...', title: 'Loading Subject...', teacher: 'Fetching Teacher...' });
 
   const [gradesViewMode, setGradesViewMode] = useState('list'); // 'list' or 'card'
 
@@ -44,6 +40,9 @@ const LmsSingleSubject = () => {
         const res = await axios.get(`${API_BASE_URL}/lms/get_classroom_feed.php?student_id=${studentIdentifier}&class_id=${id}`);
         
         if (res.data.status === 'success') {
+         if (res.data.course_info) {
+             setCourseInfo(res.data.course_info);
+          }
           setCourseFeed(res.data.feed || []);
           setDueSoon(res.data.due_soon || []);
           setRecentGrades(res.data.recent_grades || []);
@@ -93,13 +92,13 @@ const LmsSingleSubject = () => {
 
          <div className="relative z-10">
             <span className="inline-block px-3 py-1 bg-black/20 backdrop-blur-md text-white rounded-lg text-[10px] font-black uppercase tracking-widest mb-4 border border-white/10">
-              {currentCourse.tag || 'SUBJECT CODE'}
+              {courseInfo.tag || 'SUBJECT CODE'}
             </span>
             <h1 className="text-3xl md:text-5xl font-black mb-2 tracking-tight leading-tight max-w-2xl">
-              {currentCourse.title || 'Loading Subject...'}
+              {courseInfo.title || 'Loading Subject...'}
             </h1>
             <p className="font-bold text-white/80 flex items-center gap-2">
-              Teacher: {currentCourse.teacher || 'TBA'}
+              Teacher: {courseInfo.teacher || 'TBA'}
             </p>
          </div>
 
