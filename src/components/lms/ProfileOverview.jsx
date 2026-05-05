@@ -1,115 +1,206 @@
-import React from 'react';
+// src/components/lms/ProfileOverview.jsx
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { Mail, Phone, MapPin, Edit3, BookOpen, User as UserIcon } from 'lucide-react';
+import { Loader2, Mail, Phone, MapPin, User, BookOpen, Users, Edit3 } from 'lucide-react';
 
 const ProfileOverview = () => {
-  const { user } = useAuth();
+  const { user, API_BASE_URL } = useAuth(); 
+  const [data, setData] = useState({ profile: null, subjects: [], teachers: [] });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        // FIX: Ginamit na natin ang user?.id gaya ng nasa LmsSchedule mo para sure na may mase-send sa database
+        const studentId = user?.id || user?.student_id || user?.username; 
+        
+        if (!studentId) {
+          console.warn("Walang student ID na nakita.");
+          setLoading(false);
+          return; 
+        }
+
+        const response = await axios.get(`${API_BASE_URL}/lms/get_profile_overview.php?student_id=${studentId}`);
+        
+        if (response.data && !response.data.error) {
+          setData(response.data);
+        } else {
+          console.error("API Error:", response.data.error);
+        }
+      } catch (error) {
+        console.error("Error fetching profile data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) fetchProfileData();
+  }, [user, API_BASE_URL]);
+
+  if (loading) {
+    return (
+      <div className="h-[60vh] flex flex-col items-center justify-center gap-4">
+        <Loader2 className="animate-spin text-blue-600" size={40} />
+        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Loading Profile...</p>
+      </div>
+    );
+  }
+
+  const { profile = null, subjects = [], teachers = [] } = data || {};
+
+  const getInitials = (firstName, lastName) => {
+    return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
+  };
 
   return (
-    <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6 animate-fade-in font-sans">
       
-      {/* HEADER CARD (Top Section) */}
-      <div className="bg-white rounded-[2.5rem] p-8 md:p-10 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-10 relative overflow-hidden">
-        <div className="absolute right-0 top-0 w-64 h-64 bg-indigo-50/50 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+      {/* 
+        TOP BANNER
+        Ginaya ko yung solid Blue background, heavy fonts, at styling nung reference mo 
+      */}
+      <div className="bg-[#2563eb] rounded-[2rem] p-8 flex flex-col md:flex-row items-center gap-6 text-white shadow-lg shadow-blue-500/20 relative overflow-hidden">
         
-        {/* Profile Picture */}
-        <div className="relative shrink-0">
-          <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-8 border-slate-50 shadow-inner flex items-center justify-center bg-indigo-100 text-indigo-600 font-black text-5xl overflow-hidden">
-            {user?.first_name?.charAt(0) || 'S'}
+        <div className="relative z-10 shrink-0">
+          <div className="w-28 h-28 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-4xl font-black border-4 border-white/30 shadow-inner">
+            {getInitials(profile?.first_name, profile?.last_name)}
           </div>
-          <button className="absolute bottom-1 right-1 p-2.5 bg-indigo-600 text-white rounded-full shadow-lg border-4 border-white hover:scale-110 transition-transform">
-            <Edit3 size={18} />
+          <button className="absolute bottom-1 right-1 bg-white text-blue-600 p-2.5 rounded-full hover:bg-slate-100 transition shadow-md">
+             <Edit3 size={16} strokeWidth={3} />
           </button>
         </div>
-
-        {/* Basic Info */}
-        <div className="text-center md:text-left z-10 flex-1">
-          <h1 className="text-3xl md:text-5xl font-black text-slate-800 tracking-tight mb-2">
-            {user?.first_name} {user?.last_name}
+        
+        <div className="text-center md:text-left flex-1 z-10">
+          <div className="mb-2">
+             <span className="bg-white/20 backdrop-blur-sm text-white px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase shadow-sm">
+               Student Profile
+             </span>
+          </div>
+          <h1 className="text-3xl md:text-4xl font-black tracking-tight mb-4 drop-shadow-sm">
+            {profile?.first_name || 'No Name'} {profile?.last_name || ''}
           </h1>
-          <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-4">
-             <span className="px-4 py-1.5 bg-slate-100 rounded-xl text-xs font-black text-slate-500 uppercase tracking-widest">ID: {user?.student_number || '2026-0001'}</span>
-             <span className="px-4 py-1.5 bg-indigo-50 rounded-xl text-xs font-black text-indigo-600 uppercase tracking-widest">1st Year - BSIT</span>
-             <span className="px-4 py-1.5 bg-emerald-50 rounded-xl text-xs font-black text-emerald-600 uppercase tracking-widest">S.Y. 2026-2027</span>
+          <div className="flex flex-wrap justify-center md:justify-start gap-2">
+            <span className="px-4 py-1.5 bg-black/10 backdrop-blur-sm text-white text-xs font-bold rounded-full border border-white/10">ID: {profile?.student_id || 'N/A'}</span>
+            <span className="px-4 py-1.5 bg-black/10 backdrop-blur-sm text-white text-xs font-bold rounded-full border border-white/10">{profile?.grade_level || 'N/A'} {profile?.program_code ? `- ${profile.program_code}` : ''}</span>
+            <span className="px-4 py-1.5 bg-black/10 backdrop-blur-sm text-white text-xs font-bold rounded-full border border-white/10">S.Y. {profile?.school_year || 'N/A'}</span>
           </div>
         </div>
       </div>
 
-      {/* MIDDLE SECTION GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      {/* CARDS GRID */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        {/* Personal Info Column (Left) */}
-        <div className="lg:col-span-4 bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm">
-          <div className="flex justify-between items-center mb-8">
-            <h3 className="font-black text-slate-800 uppercase tracking-widest text-xs flex items-center gap-2">
-              <UserIcon size={16} className="text-indigo-500" /> Personal Info
-            </h3>
-            <button className="text-indigo-600 font-black text-[10px] uppercase tracking-widest hover:underline">Edit</button>
+        {/* PERSONAL INFO CARD */}
+        <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-base font-black text-slate-800 flex items-center gap-2">
+              <User size={18} className="text-blue-500" strokeWidth={3} />
+              PERSONAL INFO
+            </h2>
+            <button className="bg-blue-50 text-blue-600 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider hover:bg-blue-100 transition">
+              Edit
+            </button>
           </div>
-          <div className="space-y-6">
-            <InfoItem icon={<Mail size={16} />} label="Email Address" value={user?.email || 'student@school.edu.ph'} />
-            <InfoItem icon={<Phone size={16} />} label="Phone Number" value="+63 912 345 6789" />
-            <InfoItem icon={<MapPin size={16} />} label="Address" value="Obando, Bulacan" />
+          
+          <div className="space-y-5">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 shrink-0">
+                <Mail size={18} strokeWidth={2.5} />
+              </div>
+              <div className="pt-1 overflow-hidden">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Email Address</p>
+                <p className="text-sm font-bold text-slate-700 truncate">{profile?.email || 'N/A'}</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 shrink-0">
+                <Phone size={18} strokeWidth={2.5} />
+              </div>
+              <div className="pt-1 overflow-hidden">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Phone Number</p>
+                <p className="text-sm font-bold text-slate-700 truncate">{profile?.mobile_no || 'N/A'}</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 shrink-0">
+                <MapPin size={18} strokeWidth={2.5} />
+              </div>
+              <div className="pt-1">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Address</p>
+                <p className="text-sm font-bold text-slate-700 leading-tight">
+                  {profile?.address_city ? `${profile.address_city}, ` : ''}{profile?.address_province || 'N/A'}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Subjects Enrolled (Center/Right) */}
-        <div className="lg:col-span-5 bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm">
-           <h3 className="font-black text-slate-800 uppercase tracking-widest text-xs mb-8">Subjects Enrolled</h3>
-           <div className="space-y-4">
-              {['GE-PURPCOM', 'GE-RPH', 'IT101'].map((sub, i) => (
-                <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl hover:bg-indigo-50 transition-colors cursor-pointer group">
-                   <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-indigo-600 font-black text-xs shadow-sm">{sub.split('-')[1]?.charAt(0) || sub.charAt(0)}</div>
-                      <span className="text-sm font-black text-slate-700 group-hover:text-indigo-600 transition-colors">{sub}</span>
-                   </div>
-                   <BookOpen size={16} className="text-slate-300" />
-                </div>
-              ))}
-           </div>
-        </div>
-
-        {/* Teachers Column (Right) */}
-        <div className="lg:col-span-3 bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm">
-           <h3 className="font-black text-slate-800 uppercase tracking-widest text-xs mb-8">Teachers</h3>
-           <div className="flex flex-col gap-6">
-              {['Jackie Sun', 'Nymia Dela Cruz'].map((name, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-indigo-100 border-2 border-white shadow-sm flex items-center justify-center text-indigo-600 font-black text-xs uppercase">{name.charAt(0)}</div>
-                  <div>
-                    <p className="text-xs font-black text-slate-700">{name}</p>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Instructor</p>
+        {/* SUBJECTS ENROLLED CARD */}
+        <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 md:col-span-1">
+          <h2 className="text-base font-black text-slate-800 mb-6 flex items-center gap-2">
+            <BookOpen size={18} className="text-blue-500" strokeWidth={3} />
+            SUBJECTS ENROLLED
+          </h2>
+          <div className="space-y-3">
+            {subjects?.length > 0 ? (
+              subjects.map((sub, idx) => (
+                <div key={idx} className="flex items-center gap-4 p-4 rounded-2xl border border-slate-100 hover:border-blue-100 hover:bg-blue-50/50 transition group">
+                  <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-black text-sm group-hover:scale-110 transition-transform shrink-0">
+                    {sub?.subject_code?.charAt(0) || '-'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-black text-slate-800 truncate">{sub.subject_code}</p>
+                    <p className="text-[11px] font-bold text-slate-400 truncate mt-0.5 uppercase tracking-wide">{sub.subject_description}</p>
                   </div>
                 </div>
-              ))}
-           </div>
-        </div>
-      </div>
-
-      {/* BOTTOM SECTION: Student Learning Track (Graph Placeholder) */}
-      <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm">
-         <h3 className="font-black text-slate-800 uppercase tracking-widest text-xs mb-8">Student Learning Track</h3>
-         <div className="h-48 w-full bg-slate-50 rounded-3xl flex items-end justify-around p-6 gap-2">
-            {[60, 80, 45, 90, 70, 95, 85].map((val, i) => (
-              <div key={i} className="w-full max-w-[40px] bg-indigo-500 rounded-t-xl transition-all hover:bg-indigo-600 cursor-help relative group" style={{ height: `${val}%` }}>
-                 <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">{val}%</span>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-sm font-bold text-slate-400">No subjects currently enrolled.</p>
               </div>
-            ))}
-         </div>
+            )}
+          </div>
+        </div>
+
+        {/* TEACHERS CARD */}
+        <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
+          <h2 className="text-base font-black text-slate-800 mb-6 flex items-center gap-2">
+            <Users size={18} className="text-blue-500" strokeWidth={3} />
+            INSTRUCTORS
+          </h2>
+          <div className="space-y-4">
+            {teachers?.length > 0 ? (
+              teachers.map((teacher, idx) => (
+                <div key={idx} className="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-2xl transition">
+                  <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-black text-sm border-2 border-white shadow-sm shrink-0">
+                    {teacher.image ? (
+                      <img src={`/assets/uploads/${teacher.image}`} alt={teacher.name} className="w-full h-full rounded-full object-cover" />
+                    ) : (
+                      getInitials(teacher?.name?.split(' ')[0], teacher?.name?.split(' ')[1])
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-black text-slate-800 truncate">{teacher.name}</p>
+                    <span className="inline-block px-2.5 py-0.5 mt-1 bg-slate-100 text-slate-500 rounded-full text-[9px] font-black uppercase tracking-wider">
+                      Instructor
+                    </span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-sm font-bold text-slate-400">No assigned teachers.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
       </div>
     </div>
   );
 };
-
-// Helper component
-const InfoItem = ({ icon, label, value }) => (
-  <div className="flex items-center gap-4">
-    <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 shadow-sm border border-white">{icon}</div>
-    <div>
-      <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1">{label}</p>
-      <p className="text-sm font-bold text-slate-700">{value}</p>
-    </div>
-  </div>
-);
 
 export default ProfileOverview;

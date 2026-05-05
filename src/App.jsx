@@ -44,6 +44,8 @@ import LmsProfile from './pages/lms/LmsProfile';
 import LmsTakeExam from './pages/lms/LmsTakeExam';
 import ProfileOverview from './components/lms/ProfileOverview';
 import ProfileMessages from './components/lms/ProfileMessages';
+import ProfilePerformance from './components/lms/ProfilePerformance';
+import ProfileSettings from './components/lms/ProfileSettings';
 // ==========================================
 // CASHIER PAGES
 // ==========================================
@@ -235,8 +237,8 @@ function App() {
               <Route path="overview" element={<ProfileOverview />} />
               <Route path="messages" element={<ProfileMessages />} />
               {/* Dito mo na rin pwedeng idagdag yung iba pang tabs sa susunod */}
-              <Route path="performance" element={<div className="p-10 font-black text-slate-300">Performance Coming Soon</div>} />
-              <Route path="settings" element={<div className="p-10 font-black text-slate-300">Settings Coming Soon</div>} />
+              <Route path="performance" element={<ProfilePerformance />} />
+              <Route path="settings" element={<ProfileSettings />} />
             </Route>
           </Route>
 
