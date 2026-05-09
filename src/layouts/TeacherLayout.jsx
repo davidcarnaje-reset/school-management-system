@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import { 
+import {
   LayoutDashboard, Calendar, LogOut, Menu, X, School, BookOpen,
   Bell, ChevronLeft, ChevronRight, RefreshCw, Megaphone, CheckCheck,
   MoreHorizontal, Check, XSquare, BellOff, Bug
-} from 'lucide-react'; 
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import TeacherProfileModal from '../components/admin/UserProfileModal'; 
+import TeacherProfileModal from '../components/admin/UserProfileModal';
 import ReadNotificationModal from '../components/shared/ReadNotificationModal';
 import { SHARED_STYLES } from '../components/shared/teacherConstants';
 
@@ -32,14 +32,14 @@ const TeacherLayout = () => {
   const location = useLocation();
   const dropdownRef = useRef(null);
   const optionsMenuRef = useRef(null);
-  
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [teachingClasses, setTeachingClasses] = useState([]);
-  const [isCollapsed, setIsCollapsed] = useState(() => JSON.parse(localStorage.getItem('teacherSidebarCollapsed')) ?? true); 
-  
+  const [isCollapsed, setIsCollapsed] = useState(() => JSON.parse(localStorage.getItem('teacherSidebarCollapsed')) ?? true);
+
   const [isNotifyOpen, setIsNotifyOpen] = useState(false);
-  const [notifFilter, setNotifFilter] = useState('all'); 
+  const [notifFilter, setNotifFilter] = useState('all');
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [selectedNotif, setSelectedNotif] = useState(null);
@@ -80,8 +80,8 @@ const TeacherLayout = () => {
     if (user?.id && user?.role === 'teacher') {
       const token = localStorage.getItem('sms_token') || '';
       axios.get(`${API_BASE_URL}/teacher/get_sections.php?teacher_id=${user.id}`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(res => { if (res.data.status === 'success') setTeachingClasses(res.data.data || []); })
-      .catch(console.error);
+        .then(res => { if (res.data.status === 'success') setTeachingClasses(res.data.data || []); })
+        .catch(console.error);
     }
   }, [user, API_BASE_URL]);
 
@@ -101,7 +101,7 @@ const TeacherLayout = () => {
         } catch (err) { console.error(err); }
       };
       fetchNotifs();
-      const intId = setInterval(fetchNotifs, 30000); 
+      const intId = setInterval(fetchNotifs, 30000);
       return () => clearInterval(intId);
     }
   }, [user, API_BASE_URL]);
@@ -110,22 +110,22 @@ const TeacherLayout = () => {
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (selectedNotif) return; 
+      if (selectedNotif) return;
       const inDrop = dropdownRef.current?.contains(e.target);
       const inOpts = optionsMenuRef.current?.contains(e.target);
       const isBell = e.target.closest('[data-notification-bell]');
 
-      if (!inDrop && !inOpts && !isBell) { setIsNotifyOpen(false); setActiveMenuNotif(null); } 
-      else if (inDrop && !inOpts) setActiveMenuNotif(null); 
+      if (!inDrop && !inOpts && !isBell) { setIsNotifyOpen(false); setActiveMenuNotif(null); }
+      else if (inDrop && !inOpts) setActiveMenuNotif(null);
     };
     document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('touchstart', handleClickOutside); 
+    document.addEventListener('touchstart', handleClickOutside);
     return () => { document.removeEventListener('mousedown', handleClickOutside); document.removeEventListener('touchstart', handleClickOutside); };
-  }, [selectedNotif]); 
+  }, [selectedNotif]);
 
   // ─── HANDLERS ────────────────────────────────────────────────────────────────
   const toggleNotifications = () => {
-    if (isAnnouncementsPage) return; 
+    if (isAnnouncementsPage) return;
     const newState = !isNotifyOpen;
     setIsNotifyOpen(newState);
     if (!newState) { setShowAllInDropdown(false); setActiveMenuNotif(null); }
@@ -134,16 +134,16 @@ const TeacherLayout = () => {
   const handleMarkAllAsRead = async (e) => {
     e.stopPropagation();
     if (unreadCount === 0) return;
-    setUnreadCount(0); 
-    setNotifications(p => p.map(n => ({...n, is_read: 1}))); 
-    try { await axios.post(`${API_BASE_URL}/teacher/mark_notifications_read.php`, { user_id: user.id, role: user.role }, { headers: { Authorization: `Bearer ${localStorage.getItem('sms_token')}` } }); } catch {}
+    setUnreadCount(0);
+    setNotifications(p => p.map(n => ({ ...n, is_read: 1 })));
+    try { await axios.post(`${API_BASE_URL}/teacher/mark_notifications_read.php`, { user_id: user.id, role: user.role }, { headers: { Authorization: `Bearer ${localStorage.getItem('sms_token')}` } }); } catch { }
   };
 
-  const handleNotifClick = async (notif) => { 
+  const handleNotifClick = async (notif) => {
     if (isUnread(notif)) {
-      setNotifications(p => p.map(n => n.id === notif.id ? {...n, is_read: 1} : n));
+      setNotifications(p => p.map(n => n.id === notif.id ? { ...n, is_read: 1 } : n));
       setUnreadCount(p => Math.max(0, p - 1));
-      try { await axios.post(`${API_BASE_URL}/notifications/mark_single_read.php`, { notification_id: notif.id, user_id: user.id, role: user.role }, { headers: { Authorization: `Bearer ${localStorage.getItem('sms_token')}` } }); } catch {}
+      try { await axios.post(`${API_BASE_URL}/notifications/mark_single_read.php`, { notification_id: notif.id, user_id: user.id, role: user.role }, { headers: { Authorization: `Bearer ${localStorage.getItem('sms_token')}` } }); } catch { }
     }
     setSelectedNotif({
       id: notif.id, type: notif.type || 'Announcement', title: notif.title, message: notif.message,
@@ -158,21 +158,21 @@ const TeacherLayout = () => {
     const notif = notifications.find(n => n.id === id);
     setNotifications(p => p.filter(n => n.id !== id));
     if (notif && isUnread(notif)) setUnreadCount(p => Math.max(0, p - 1));
-    setActiveMenuNotif(null); 
+    setActiveMenuNotif(null);
   };
 
   const handleToggleReadLocal = (e, notif) => {
     e.preventDefault(); e.stopPropagation();
     const unread = isUnread(notif);
-    setNotifications(p => p.map(n => n.id === notif.id ? {...n, is_read: unread ? 1 : 0} : n));
+    setNotifications(p => p.map(n => n.id === notif.id ? { ...n, is_read: unread ? 1 : 0 } : n));
     setUnreadCount(p => unread ? Math.max(0, p - 1) : p + 1);
-    setActiveMenuNotif(p => ({...p, is_read: unread ? 1 : 0}));
+    setActiveMenuNotif(p => ({ ...p, is_read: unread ? 1 : 0 }));
   };
 
   // ─── RENDER HELPERS ──────────────────────────────────────────────────────────
   const filteredNotifs = notifications.filter(n => n.type !== 'Task Reminder' && (notifFilter === 'all' || isUnread(n)));
   const displayedNotifications = showAllInDropdown ? filteredNotifs : filteredNotifs.slice(0, 6);
-  
+
   const currentMenu = [
     { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/teacher/dashboard' },
     { icon: <School size={20} />, label: 'My Classes', path: '/teacher/classes' },
@@ -182,12 +182,35 @@ const TeacherLayout = () => {
 
   const getHeaderTitle = () => {
     const path = location.pathname;
+
+    // 1. Kung may state na pinasa galing sa navigate(), yun ang gamitin natin
+    if (location.state && location.state.subject) {
+      const isGrading = path.includes('grading');
+      // I-check kung may quarter na naipasa, kung meron, ilagay ang "Quarter X | "
+      const quarterText = location.state.quarter ? `Quarter ${location.state.quarter} | ` : '';
+
+      return {
+        main: isGrading 
+                ? `${quarterText}Grading Activity - ${location.state.subject}` 
+                : location.state.subject,
+        sub: location.state.section || ''
+      };
+    }
+    // 2. Fallback kung walang state (e.g. direct link or refresh)
     if (path.includes('/teacher/activities') || path.includes('/teacher/sections/')) {
       const classId = path.split('/').pop();
+
+      // Kung ang huling word ay 'grading', wag na i-try hanapin yung classId
+      if (classId === 'grading') {
+        return { main: 'Activity Grading', sub: 'Student Submissions' };
+      }
+
       const actClass = teachingClasses.find(c => String(c.id) === String(classId));
-      return actClass ? { main: path.includes('sections') ? `Gradebook - ${actClass.subject}` : actClass.subject, sub: actClass.section_name || actClass.section } 
-                      : { main: path.includes('sections') ? 'Grade Management' : '', sub: '' };
+      return actClass
+        ? { main: path.includes('sections') ? `Gradebook - ${actClass.subject}` : actClass.subject, sub: actClass.section_name || actClass.section }
+        : { main: path.includes('sections') ? 'Grade Management' : 'LMS', sub: '' };
     }
+
     if (path.includes('/teacher/profile')) return { main: 'My Profile', sub: '' };
     return { main: path.split('/').pop()?.replace('-', ' ') || 'Dashboard', sub: '' };
   };
@@ -225,7 +248,7 @@ const TeacherLayout = () => {
 
       {/* ─── SIDEBAR ─── */}
       <aside className={`glass-sidebar fixed z-[110] text-slate-700 flex flex-col transition-all duration-300 ease-in-out shadow-2xl left-0 top-0 h-full w-[85%] max-w-xs m-0 rounded-r-[2rem] lg:left-0 lg:top-0 lg:h-full lg:m-0 lg:rounded-none lg:rounded-r-[2rem] ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static lg:shadow-[4px_0_24px_rgba(0,0,0,0.05)] ${isCollapsed ? 'lg:w-[5.5rem]' : 'lg:w-64'}`}>
-        
+
         {/* LOGO */}
         <div className="h-24 px-6 border-b border-slate-200/50 flex items-center shrink-0">
           <div className="flex items-center gap-3 overflow-hidden">
@@ -240,72 +263,68 @@ const TeacherLayout = () => {
           </div>
           <button className="lg:hidden text-slate-600 p-2 bg-slate-100/50 rounded-xl ml-auto" onClick={() => setIsSidebarOpen(false)}><X size={24} /></button>
         </div>
-        
+
         {/* NAV LINKS */}
         <nav className="flex-1 py-6 px-3 space-y-2 sidebar-scroll">
-      {currentMenu.map((item, index) => {
-  const isActive = location.pathname === item.path || (location.pathname.includes('sections') && item.path.includes('classes')) || (location.pathname.includes('activities') && item.path.includes('activities'));
-  return (
-    <Link 
-      key={index} 
-      to={item.path} 
-      state={item.state} 
-      onClick={() => setIsSidebarOpen(false)} 
-      className={`flex items-center rounded-2xl transition-all duration-300 group ${
-        isCollapsed ? 'lg:justify-center lg:px-0' : 'lg:px-4 lg:gap-4'
-      } px-4 py-3.5 gap-4 ${isActive ? 'text-white shadow-md border border-white/40' : 'text-slate-700'}`}
-      style={activeStyle(isActive)}
-      onMouseEnter={(e) => applyHover(e, isActive)}
-      onMouseLeave={(e) => removeHover(e, isActive)}
-    >
-      <span className={`w-6 h-6 flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-white'}`}>
-        {item.icon}
-      </span>
-      <span className={`font-bold text-sm transition-all duration-300 ease-in-out whitespace-nowrap overflow-hidden ${
-        isCollapsed ? 'lg:hidden' : ''
-      }`}>
-        {item.label}
-      </span>
-    </Link>
-  );
-})}
-          
-        {teachingClasses.length > 0 && (
-  <div className="pt-4 mt-4 border-t border-slate-200/50">
-    <p className={`px-3 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 transition-all duration-300 ${isCollapsed ? 'lg:hidden' : ''}`}>Teaching</p>
-    <div className="space-y-1">
-   {teachingClasses.map(cls => {
-  const isActive = location.pathname.includes(`/${cls.id}`);
-  return (
-    <Link 
-      key={cls.id} 
-      to={`/teacher/activities/${cls.id}`} 
-      state={{ tab: 'Stream' }} 
-      onClick={() => setIsSidebarOpen(false)} 
-      className={`flex items-center rounded-2xl transition-all duration-200 group ${
-        isCollapsed ? 'lg:justify-center lg:px-0' : 'lg:px-3 lg:gap-3'
-      } px-4 py-3 gap-4 ${isActive ? 'text-white shadow-md border border-white/40' : 'text-slate-700'}`}
-      style={activeStyle(isActive)}
-      onMouseEnter={(e) => applyHover(e, isActive)}
-      onMouseLeave={(e) => removeHover(e, isActive)}
-    >
-      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0 transition-all ${isActive ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-500 group-hover:bg-white/20 group-hover:text-white'}`}>
-        {cls.subject?.charAt(0) || 'C'}
-      </div>
-      <div className={`flex flex-col min-w-0 transition-all duration-300 ease-in-out overflow-hidden ${
-        isCollapsed ? 'lg:hidden' : ''
-      }`}>
-        <span className="text-[13px] font-bold truncate">{cls.subject}</span>
-        <span className={`text-[10px] font-semibold truncate ${isActive ? 'text-white/80' : 'group-hover:text-white/80'}`}>
-          {cls.section_name || cls.section}
-        </span>
-      </div>
-    </Link>
-  );
-})}
-  </div>
-  </div>
-)}
+          {currentMenu.map((item, index) => {
+            const isActive = location.pathname === item.path || (location.pathname.includes('sections') && item.path.includes('classes')) || (location.pathname.includes('activities') && item.path.includes('activities'));
+            return (
+              <Link
+                key={index}
+                to={item.path}
+                state={item.state}
+                onClick={() => setIsSidebarOpen(false)}
+                className={`flex items-center rounded-2xl transition-all duration-300 group ${isCollapsed ? 'lg:justify-center lg:px-0' : 'lg:px-4 lg:gap-4'
+                  } px-4 py-3.5 gap-4 ${isActive ? 'text-white shadow-md border border-white/40' : 'text-slate-700'}`}
+                style={activeStyle(isActive)}
+                onMouseEnter={(e) => applyHover(e, isActive)}
+                onMouseLeave={(e) => removeHover(e, isActive)}
+              >
+                <span className={`w-6 h-6 flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-white'}`}>
+                  {item.icon}
+                </span>
+                <span className={`font-bold text-sm transition-all duration-300 ease-in-out whitespace-nowrap overflow-hidden ${isCollapsed ? 'lg:hidden' : ''
+                  }`}>
+                  {item.label}
+                </span>
+              </Link>
+            );
+          })}
+
+          {teachingClasses.length > 0 && (
+            <div className="pt-4 mt-4 border-t border-slate-200/50">
+              <p className={`px-3 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 transition-all duration-300 ${isCollapsed ? 'lg:hidden' : ''}`}>Teaching</p>
+              <div className="space-y-1">
+                {teachingClasses.map(cls => {
+                  const isActive = location.pathname.includes(`/${cls.id}`);
+                  return (
+                    <Link
+                      key={cls.id}
+                      to={`/teacher/activities/${cls.id}`}
+                      state={{ tab: 'Stream' }}
+                      onClick={() => setIsSidebarOpen(false)}
+                      className={`flex items-center rounded-2xl transition-all duration-200 group ${isCollapsed ? 'lg:justify-center lg:px-0' : 'lg:px-3 lg:gap-3'
+                        } px-4 py-3 gap-4 ${isActive ? 'text-white shadow-md border border-white/40' : 'text-slate-700'}`}
+                      style={activeStyle(isActive)}
+                      onMouseEnter={(e) => applyHover(e, isActive)}
+                      onMouseLeave={(e) => removeHover(e, isActive)}
+                    >
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0 transition-all ${isActive ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-500 group-hover:bg-white/20 group-hover:text-white'}`}>
+                        {cls.subject?.charAt(0) || 'C'}
+                      </div>
+                      <div className={`flex flex-col min-w-0 transition-all duration-300 ease-in-out overflow-hidden ${isCollapsed ? 'lg:hidden' : ''
+                        }`}>
+                        <span className="text-[13px] font-bold truncate">{cls.subject}</span>
+                        <span className={`text-[10px] font-semibold truncate ${isActive ? 'text-white/80' : 'group-hover:text-white/80'}`}>
+                          {cls.section_name || cls.section}
+                        </span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </nav>
 
         <button onClick={() => setIsCollapsed(!isCollapsed)} className="hidden lg:flex absolute -right-3.5 top-24 w-7 h-7 bg-white text-slate-800 rounded-full items-center justify-center shadow-md border border-slate-200 hover:scale-110 transition-transform z-50">
@@ -314,7 +333,7 @@ const TeacherLayout = () => {
 
         {/* BOTTOM NAV */}
         <div className="p-4 border-t border-slate-200/50 bg-white/40 shrink-0 lg:rounded-br-[2rem] rounded-b-[2rem]">
-          <Link 
+          <Link
             to="/teacher/profile"
             onClick={() => setIsSidebarOpen(false)}
             className={`flex items-center mb-2 cursor-pointer transition-all duration-300 w-full gap-3 px-2 py-2 rounded-2xl ${isProfileActive ? 'text-white shadow-md border border-white/40' : 'text-slate-800'}`}
@@ -324,7 +343,7 @@ const TeacherLayout = () => {
           >
             <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden border-2 border-white shadow-sm">
               {user?.profile_image ? (
-                <img src={`${API_BASE_URL}/uploads/profiles/${user.profile_image}`} className="w-full h-full object-cover" alt="Avatar"/>
+                <img src={`${API_BASE_URL}/uploads/profiles/${user.profile_image}`} className="w-full h-full object-cover" alt="Avatar" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-xs font-black text-white" style={{ backgroundColor: themeColor }}>
                   {user?.full_name?.charAt(0) || 'U'}
@@ -341,8 +360,8 @@ const TeacherLayout = () => {
             </div>
           </Link>
 
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="flex items-center p-3 mb-2 rounded-2xl text-slate-700 transition-all group w-full gap-4 px-4 overflow-hidden"
             onMouseEnter={(e) => applyHover(e, false, '#ccfcec', '#10b981')}
             onMouseLeave={(e) => removeHover(e, false)}
@@ -370,10 +389,10 @@ const TeacherLayout = () => {
               {getHeaderTitle().sub && <p className="text-[11px] lg:text-[13px] font-bold text-slate-500 lowercase first-letter:uppercase">{getHeaderTitle().sub}</p>}
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-4 sm:space-x-8">
             <div className="relative" ref={dropdownRef}>
-              <button title="Notifications" onClick={toggleNotifications} onMouseEnter={() => setIsBellHovered(true)} onMouseLeave={() => setIsBellHovered(false)} data-notification-bell="true" 
+              <button title="Notifications" onClick={toggleNotifications} onMouseEnter={() => setIsBellHovered(true)} onMouseLeave={() => setIsBellHovered(false)} data-notification-bell="true"
                 className="p-3 rounded-full cursor-pointer hover:scale-105 transition-all duration-300 shadow-sm border border-white/40 backdrop-blur-md"
                 style={{ backgroundColor: isNotifyOpen || isBellHovered || isAnnouncementsPage ? themeColor : 'rgba(255,255,255,0.5)', color: isNotifyOpen || isBellHovered || isAnnouncementsPage ? '#fff' : '#475569' }}>
                 <Bell size={22} className={unreadCount > 0 ? 'animate-[pulse_2s_ease-in-out_infinite]' : ''} />
@@ -383,7 +402,7 @@ const TeacherLayout = () => {
               {/* ─── NOTIFICATION DROPDOWN (REVERTED TO STANDARD WHITE) ─── */}
               {isNotifyOpen && (
                 <div className="bg-white fixed sm:absolute top-[5rem] sm:top-[3.5rem] left-[50%] sm:left-auto right-auto sm:-right-4 -translate-x-1/2 sm:translate-x-0 w-[90%] sm:w-[380px] max-w-[380px] rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-100 overflow-hidden z-[100] animate-in slide-in-from-top-2 flex flex-col">
-                  
+
                   <div className="px-5 py-4 border-b border-slate-100">
                     <div className="flex justify-between items-center mb-3">
                       <h3 className="text-xl font-black text-slate-800">Notifications</h3>
@@ -409,18 +428,18 @@ const TeacherLayout = () => {
                       return (
                         <div key={notif.id} onClick={() => { handleNotifClick(notif); setIsNotifyOpen(false); }} className="group flex gap-3 p-3 mx-2 my-1 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors relative">
                           <div className="w-12 h-12 rounded-full shrink-0 flex items-center justify-center text-white shadow-sm overflow-hidden" style={{ backgroundColor: themeColor }}>
-                            {notif.sender_image ? <img src={`${API_BASE_URL}/uploads/profiles/${notif.sender_image}`} className="w-full h-full object-cover"/> : <span className="text-lg font-black">{(notif.sender_name || 'A').charAt(0)}</span>}
+                            {notif.sender_image ? <img src={`${API_BASE_URL}/uploads/profiles/${notif.sender_image}`} className="w-full h-full object-cover" /> : <span className="text-lg font-black">{(notif.sender_name || 'A').charAt(0)}</span>}
                           </div>
-                          
+
                           <div className="flex-1 min-w-0 pr-6 flex flex-col justify-center">
-                            <p 
-                              className="text-[9px] font-black uppercase tracking-widest mb-0.5" 
-                              style={{ 
-                                color: notif.type === 'Urgent Alert' ? '#DC2626' : 
-                                      (notif.sender_role || '').toLowerCase().includes('cashier') ? '#D97706' : 
-                                      (notif.sender_role || '').toLowerCase().includes('registrar') ? '#7C3AED' : 
-                                      (notif.sender_role || '').toLowerCase().includes('guidance') ? '#059669' : 
-                                      themeColor 
+                            <p
+                              className="text-[9px] font-black uppercase tracking-widest mb-0.5"
+                              style={{
+                                color: notif.type === 'Urgent Alert' ? '#DC2626' :
+                                  (notif.sender_role || '').toLowerCase().includes('cashier') ? '#D97706' :
+                                    (notif.sender_role || '').toLowerCase().includes('registrar') ? '#7C3AED' :
+                                      (notif.sender_role || '').toLowerCase().includes('guidance') ? '#059669' :
+                                        themeColor
                               }}
                             >
                               {notif.sender_role ? `${notif.sender_role} Office` : 'General Notice'}
@@ -441,7 +460,7 @@ const TeacherLayout = () => {
                       );
                     }) : <div className="p-8 text-center text-slate-400 font-bold text-sm"><Bell size={28} className="mx-auto mb-2 opacity-50" />No {notifFilter === 'unread' ? 'unread' : ''} notifications.</div>}
                   </div>
-                  
+
                   {!showAllInDropdown && filteredNotifs.length > 6 && (
                     <div className="p-3 border-t border-slate-100 bg-white">
                       <button onClick={e => { e.stopPropagation(); setShowAllInDropdown(true); }} className="w-full py-2 text-[13px] font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">See previous notifications</button>
@@ -457,7 +476,7 @@ const TeacherLayout = () => {
                 <p className="text-[9px] font-bold uppercase mt-1 tracking-widest" style={{ color: themeColor }}>System Verified</p>
               </div>
               <div className="w-10 h-10 rounded-xl overflow-hidden border-2 border-white shadow-sm shrink-0" style={{ backgroundColor: themeColor }}>
-                {user?.profile_image ? <img src={`${API_BASE_URL}/uploads/profiles/${user.profile_image}`} className="w-full h-full object-cover"/> : <div className="w-full h-full flex items-center justify-center font-black text-white">{user?.full_name?.charAt(0) || 'U'}</div>}
+                {user?.profile_image ? <img src={`${API_BASE_URL}/uploads/profiles/${user.profile_image}`} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center font-black text-white">{user?.full_name?.charAt(0) || 'U'}</div>}
               </div>
             </div>
           </div>

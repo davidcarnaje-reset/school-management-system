@@ -28,13 +28,13 @@ const TeacherActivityGrading = () => {
   const navigate       = useNavigate();
   const location       = useLocation();
 
-  const { subject, section, quarter } = location.state || {};
-  const qNum    = quarter ? parseInt(quarter) : null;
-  const qColors = qNum ? quarterColors[qNum] : null;
-
+  // Ibalik natin ito para makuha ang API URL at kulay
   const { API_BASE_URL, branding } = useAuth();
   const themeColor = branding?.theme_color || '#6366f1';
 
+  const { subject, section } = location.state || {}; // Inalis natin ang quarter dito
+  
+  // ISANG BESES LANG IDE-DECLARE ANG MGA STATES
   const [activity,          setActivity]          = useState(null);
   const [scores,            setScores]            = useState([]);
   const [isLoading,         setIsLoading]         = useState(true);
@@ -43,6 +43,11 @@ const TeacherActivityGrading = () => {
   
   const [gradingExamStudent, setGradingExamStudent] = useState(null); 
   const [viewingWrittenWork, setViewingWrittenWork] = useState(null); 
+
+  // 🟢 DITO NA NATIN KUKUNIN ANG QUARTER MISMO SA ACTIVITY DATA
+  const activeQuarter = activity?.quarter || null;
+  const qNum    = activeQuarter ? parseInt(activeQuarter) : null;
+  const qColors = qNum ? quarterColors[qNum] : null;
 
   const fetchData = useCallback(async (showLoading = true) => {
     if (!activityId || activityId === 'undefined') return;
@@ -86,11 +91,11 @@ const TeacherActivityGrading = () => {
     <div className="tag-root">
       <style>{gradingStyles(themeColor)}</style>
 
-      {/* MODALS */}
+     {/* MODALS */}
       {gradingExamStudent && (
         <GradeExamSubmissionModal 
           studentId={gradingExamStudent.student_id} activityId={activityId} classId={activity?.class_id}
-          quarter={quarter} studentName={gradingExamStudent.name} themeColor={themeColor} API_BASE_URL={API_BASE_URL}
+          quarter={activeQuarter} studentName={gradingExamStudent.name} themeColor={themeColor} API_BASE_URL={API_BASE_URL}
           onClose={() => setGradingExamStudent(null)} onRefresh={() => fetchData(false)}
         />
       )}
@@ -98,7 +103,7 @@ const TeacherActivityGrading = () => {
       {viewingWrittenWork && (
         <ViewSubmissionModal 
           studentId={viewingWrittenWork.student_id} activityId={activityId} classId={activity?.class_id}
-          quarter={quarter} studentName={viewingWrittenWork.name} maxScore={activity?.max_score}
+          quarter={activeQuarter} studentName={viewingWrittenWork.name} maxScore={activity?.max_score}
           submission={{ type: viewingWrittenWork.submission_type || 'text', content: viewingWrittenWork.submission_content }}
           currentScore={viewingWrittenWork.score} onRefresh={() => fetchData(false)} onClose={() => setViewingWrittenWork(null)}
           themeColor={themeColor} API_BASE_URL={API_BASE_URL}
